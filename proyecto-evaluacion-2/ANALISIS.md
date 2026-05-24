@@ -403,6 +403,196 @@ Cada componente tiene tests unitarios con JUnit 5 (Java) y Jest (Node.js). La co
 
 ---
 
+## Arquetipos Maven
+
+### Que es un Arquetipo Maven
+
+Un arquetipo Maven es una plantilla de proyecto que define la estructura de directorios, el `pom.xml` base y las dependencias iniciales. Cuando se genera un proyecto con `spring-boot-starter-parent` como parent POM, Maven hereda la gestion de dependencias, plugins y configuracion de compilacion de Spring Boot, garantizando coherencia entre todos los microservicios del sistema.
+
+En este proyecto, los tres microservicios Spring Boot comparten el mismo parent POM base, lo que significa que las versiones de librerias (Jackson, Tomcat, JUnit, etc.) estan coordinadas centralmente por Spring Boot y no requieren gestion manual en cada servicio.
+
+---
+
+### Arquetipo base por microservicio
+
+Todos los microservicios Spring Boot del proyecto heredan de `spring-boot-starter-parent`, pero con versiones y dependencias distintas segun el rol de cada servicio:
+
+#### MS1-pos — Spring Boot 3.3.0 / Java 21
+
+**Parent POM real (ms1-pos/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.0</version>
+</parent>
+<groupId>com.servicio1</groupId>
+<artifactId>demo</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-amqp (RabbitMQ), mysql-connector-j, spring-cloud-starter-circuitbreaker-resilience4j, lombok
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.servicio1 \
+  -DartifactId=ms1-pos \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+Luego reemplazar el `pom.xml` generado con `spring-boot-starter-parent 3.3.0` como parent, o usar directamente Spring Initializr (start.spring.io) con las dependencias: Web, AMQP, MySQL Driver, Cloud Resilience4j.
+
+---
+
+#### MS2-online — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (ms2-online/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>ms2-online</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, lombok, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=ms2-online \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+Alternativa recomendada con Spring Initializr: seleccionar Spring Boot 3.2.1, Java 17, dependencias Web y Lombok.
+
+---
+
+#### orq-service — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (orq-service/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>orq-service</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=orq-service \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+
+---
+
+#### bff-service — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (bff-service/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>bff-service</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=bff-service \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+
+---
+
+#### frontend-app — Node.js (sin Maven)
+
+El frontend no usa Maven sino NPM como gestor de dependencias. El equivalente al arquetipo en el ecosistema Node.js es `npm init`:
+
+```bash
+npm init -y
+npm install express
+npm install --save-dev jest
+```
+
+**package.json base real:**
+```json
+{
+  "name": "frontend-app",
+  "version": "1.0.0",
+  "dependencies": { "express": "^4.18.2" },
+  "devDependencies": { "jest": "^29.7.0" }
+}
+```
+
+---
+
+### Por que spring-boot-starter-parent garantiza coherencia y escalabilidad
+
+**1. Gestion centralizada de versiones**
+
+El parent POM de Spring Boot define las versiones de mas de 300 dependencias comunes (Jackson, Tomcat, JUnit, Mockito, Log4j, etc.). Todos los microservicios que heredan de la misma version obtienen exactamente las mismas versiones de librerias transitivas, eliminando el clasico problema de "dependency hell" donde dos servicios usan versiones incompatibles de la misma libreria.
+
+```xml
+<!-- No es necesario especificar version — la hereda del parent -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+```
+
+**2. Configuracion de compilacion estandarizada**
+
+El parent configura automaticamente:
+- `maven-compiler-plugin` con la version de Java correcta
+- `maven-surefire-plugin` para ejecutar tests con JUnit 5
+- `spring-boot-maven-plugin` para empaquetar el JAR ejecutable (fat JAR)
+- Encoding UTF-8 en todos los archivos fuente
+
+Esto garantiza que `mvn package` produce el mismo tipo de artefacto en todos los servicios: un JAR autocontenido que puede ejecutarse con `java -jar app.jar`.
+
+**3. Escalabilidad del equipo**
+
+Cuando un nuevo integrante necesita crear un microservicio adicional (por ejemplo, un MS3 para inventario), basta con replicar el mismo parent POM y agregar solo las dependencias especificas de ese servicio. La estructura de directorios, la configuracion de tests y el empaquetado son identicos a los servicios existentes, reduciendo la curva de aprendizaje.
+
+**4. Actualizaciones coordinadas**
+
+Cambiar la version de Spring Boot en un microservicio es un cambio de una sola linea en el parent. Todas las dependencias transitivas se actualizan automaticamente a las versiones compatibles certificadas por el equipo de Spring. Esto es especialmente importante en contextos de seguridad: cuando se publica un CVE en una libreria, actualizar el parent a la siguiente version de Spring Boot corrige todas las vulnerabilidades en todos los modulos del ecosistema.
+
+**Tabla resumen de arquetipos por servicio:**
+
+| Servicio | Parent / Base | Version Spring Boot | Java | Dependencias adicionales |
+|---|---|---|---|---|
+| ms1-pos | spring-boot-starter-parent | 3.3.0 | 21 | AMQP, MySQL, Resilience4j, Lombok |
+| ms2-online | spring-boot-starter-parent | 3.2.1 | 17 | Lombok |
+| orq-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
+| bff-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
+| frontend-app | npm (Node.js 18) | — | — | Express, Jest |
+
+---
+
 ## Referencias
 
 - Gamma, E., Helm, R., Johnson, R., Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software.* Addison-Wesley.
@@ -410,3 +600,5 @@ Cada componente tiene tests unitarios con JUnit 5 (Java) y Jest (Node.js). La co
 - Richardson, C. (2018). *Microservices Patterns.* Manning Publications.
 - Bloch, J. (2018). *Effective Java, 3rd Edition.* Addison-Wesley. (Item 3: Singleton con Holder Pattern)
 - OWASP. (2023). *Logging Cheat Sheet.* owasp.org/www-project-cheat-sheets
+- Apache Maven. (2024). *Maven Archetype Plugin.* maven.apache.org/archetype/maven-archetype-plugin
+- Spring. (2024). *Spring Boot Starter Parent.* docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.build-systems.maven
