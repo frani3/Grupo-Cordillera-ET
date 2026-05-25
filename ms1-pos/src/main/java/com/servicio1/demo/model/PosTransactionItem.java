@@ -1,20 +1,13 @@
 package com.servicio1.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
-@Entity
-@Table(name = "pos_transaction_item")
 public class PosTransactionItem {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore          // rompe la referencia circular PosTransaction ↔ PosTransactionItem
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id")
+    @JsonIgnore
     private PosTransaction transaction;
 
     private String sku;

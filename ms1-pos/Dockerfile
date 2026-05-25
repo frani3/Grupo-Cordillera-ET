@@ -24,19 +24,7 @@ WORKDIR /app
 # Copiar el .jar compilado desde la etapa anterior
 COPY --from=build /app/target/*.jar app.jar
 
-# Variables de entorno con valores por defecto seguros
 ENV SERVER_PORT=8081
-ENV DB_HOST=mysql
-ENV DB_PORT=3306
-ENV DB_NAME=cordillera_pos
-ENV DB_USER=root
-ENV DB_PASSWORD=root
-ENV RABBITMQ_HOST=rabbitmq
-ENV RABBITMQ_PORT=5672
-ENV RABBITMQ_USER=guest
-ENV RABBITMQ_PASSWORD=guest
-ENV RABBITMQ_QUEUE_POS=q.pos.deviamserver
-ENV ORQUESTADOR_URL=http://orq-service:8080/api/v1/pos
 
 EXPOSE ${SERVER_PORT}
 

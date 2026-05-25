@@ -7,55 +7,9 @@ networks:
   cordillera-net:
     driver: bridge
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Volúmenes persistentes
-# ─────────────────────────────────────────────────────────────────────────────
-volumes:
-  mysql-data:
-
 services:
-
-  # ── Infraestructura ─────────────────────────────────────────────────────────
-
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-db
-    networks:
-      - cordillera-net
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: cordillera_pos
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq-broker
-    networks:
-      - cordillera-net
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672"    # Management UI
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # ── data-ms (ms1-pos-processor) ─────────────────────────────────────────────
-  # Patrón: Singleton (pool de conexiones)
+  # ── ms1-pos ─────────────────────────────────────────────────────────────────
+  # Patrón: Singleton (CopyOnWriteArrayList en memoria)
   # Puerto interno: 8081
 
   ms1-pos:
@@ -69,23 +23,6 @@ services:
       - "8081:8081"
     environment:
       SERVER_PORT: 8081
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_NAME: cordillera_pos
-      DB_USER: root
-      DB_PASSWORD: root
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-      RABBITMQ_QUEUE_POS: q.pos.deviamserver
-      # URL del orq-service (modelo PUSH legado / circuit-breaker)
-      ORQUESTADOR_URL: http://orq-service:8080/api/v1/pos
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     restart: on-failure
 
   # ── orq-service ─────────────────────────────────────────────────────────────
