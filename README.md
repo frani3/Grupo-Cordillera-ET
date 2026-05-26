@@ -197,9 +197,9 @@ Ver [TAREAS.md](TAREAS.md) para el detalle completo de tareas por integrante.
 
 | Integrante | Responsabilidad |
 |---|---|
-| Francisca Barrera | MS1 (ventas POS) + MS2 (ventas online) + simuladores |
+| Patricio Zapata | MS1 (ventas POS) + MS2 (ventas online) + simuladores |
 | Ignacio Sorko | orq-service: Strategy, consolidacion paralela MS1+MS2 |
-| Patricio Zapata | bff-service (Proxy) + frontend-app (Factory) + docker-compose |
+| Francisca Barrera | bff-service (Proxy) + frontend-app (Factory) + docker-compose |
 
 ---
 
