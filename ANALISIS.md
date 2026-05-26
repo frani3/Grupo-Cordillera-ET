@@ -5,27 +5,41 @@
 
 ## Contexto del Sistema
 
-El sistema implementa una arquitectura de microservicios en cuatro capas. Cada capa tiene una responsabilidad delimitada y adopta un patrón de diseño GoF que resuelve un problema arquitectónico concreto, no como elección arbitraria, sino como respuesta a requisitos reales del cliente:
+El sistema implementa una arquitectura de microservicios en cinco capas. Cada capa tiene una responsabilidad delimitada y adopta un patrón de diseño GoF que resuelve un problema arquitectónico concreto, no como elección arbitraria, sino como respuesta a requisitos reales del cliente:
 
 > *"El sistema debe soportar múltiples entornos, garantizar la seguridad entre capas, ser mantenible por un equipo distribuido y escalar sin reescribir código existente."*
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│   frontend-app  (Node.js)  — Patrón FACTORY METHOD  │
+│   frontend-app  (Node.js)  — Patron FACTORY METHOD  │
 └────────────────────────┬────────────────────────────┘
                          │ HTTP / JSON
 ┌────────────────────────▼────────────────────────────┐
-│   bff-service   (Spring Boot) — Patrón PROXY        │
+│   bff-service   (Spring Boot) — Patron PROXY        │
 └────────────────────────┬────────────────────────────┘
                          │ HTTP / JSON (red interna)
 ┌────────────────────────▼────────────────────────────┐
-│   orq-service   (Spring Boot) — Patrón STRATEGY     │
-└────────────────────────┬────────────────────────────┘
-                         │ JDBC
-┌────────────────────────▼────────────────────────────┐
-│   data-ms       (Spring Boot) — Patrón SINGLETON    │
-└─────────────────────────────────────────────────────┘
+│   orq-service   (Spring Boot) — Patron STRATEGY     │
+│   (llama a MS1 y MS2 en paralelo — CompletableFuture)│
+└──────────────┬─────────────────┬───────────────────┘
+               │ HTTP            │ HTTP
+┌──────────────▼──────┐  ┌───────▼─────────────────┐
+│  ms1-pos            │  │  ms2-online              │
+│  (Spring Boot)      │  │  (Spring Boot)           │
+│  Patron SINGLETON   │  │  Patron SINGLETON        │
+│  Ventas POS         │  │  Ventas Online           │
+│  Puerto :8081       │  │  Puerto :8083            │
+└─────────────────────┘  └──────────────────────────┘
 ```
+
+**Responsabilidades por capa:**
+
+| Capa | Responsabilidad |
+|---|---|
+| MS1 / MS2 | Recibir datos, validarlos, limpiarlos y almacenarlos. Sin logica de negocio. |
+| orq-service | Consultar ambos MS en paralelo, consolidar y aplicar la estrategia de procesamiento |
+| bff-service | Validar token Bearer, auditar y delegar al orq |
+| frontend-app | Crear el cliente HTTP segun el entorno y consumir el BFF |
 
 ---
 
@@ -270,63 +284,87 @@ Template Method define el esqueleto de un algoritmo y permite que las subclases 
 
 ---
 
-## 4. Data MS — Patrón Singleton
+## 4. MS1-pos y MS2-online — Patrón Singleton
 
 ### Categoría GoF
 Creacional.
 
+### Descripción de los microservicios
+
+El sistema cuenta con **dos microservicios de datos**, cada uno con su propio dominio y repositorio en memoria:
+
+| Microservicio | Puerto | Dominio | Endpoint entrada | Endpoint consulta |
+|---|---|---|---|---|
+| `ms1-pos` | 8081 | Ventas en tienda física | `POST /api/pos/simulate-mq` | `GET /api/pos/data` |
+| `ms2-online` | 8083 | Ventas canal online | `POST /api/online/venta` | `GET /api/online/ventas` |
+
+Ambos microservicios tienen la **misma responsabilidad**: recibir datos, validarlos, limpiarlos y almacenarlos. No aplican filtros ni lógica de negocio — esa responsabilidad recae en el orq-service.
+
 ### El Problema sin el Patrón
 
-El microservicio de datos necesita un pool de conexiones a la base de datos. Sin Singleton:
+Cada solicitud concurrente crea una nueva instancia del repositorio, generando múltiples listas independientes y pérdida de datos:
 
 ```java
 // CÓDIGO FRÁGIL sin Singleton:
-class UserRepository {
-  public String findById(int id) {
-    // Cada llamada crea una nueva instancia del gestor
-    DatabaseConnectionManager mgr = new DatabaseConnectionManager();
-    // → Con 100 solicitudes concurrentes = 100 instancias del pool
-    // → Agotamiento de conexiones disponibles en la base de datos
-    // → Inconsistencias de estado entre instancias
-    // → Overhead de memoria proporcional a la carga
+class VentaRepository {
+  public void save(Venta v) {
+    List<Venta> db = new ArrayList<>();  // Nueva lista en cada llamada
+    db.add(v);
+    // → Con 100 solicitudes concurrentes = 100 listas separadas
+    // → GET /ventas devuelve 0 registros porque cada lista es local
+    // → Inconsistencia total de estado
   }
 }
 ```
 
 ### La Solución con Singleton (Holder Pattern)
 
-```java
-// PATRÓN SINGLETON: Justificación técnica para evaluación parcial 2
-//
-// Initialization-on-Demand Holder: thread-safe sin synchronized en el camino feliz.
-// La JVM garantiza que la inicialización estática de clases es atómica.
-public class DatabaseConnectionManager {
-    private DatabaseConnectionManager() {}           // Constructor privado
+Ambos microservicios implementan el mismo patrón — aquí el ejemplo de MS2:
 
-    private static class Holder {                    // Carga diferida
-        static final DatabaseConnectionManager INSTANCE = new DatabaseConnectionManager();
+```java
+// PATRON SINGLETON — Holder Pattern: thread-safe sin synchronized
+@Repository
+public class OnlineVentaRepository {
+
+    protected OnlineVentaRepository() {}  // Constructor protegido
+
+    private static class DatabaseHolder {
+        // La JVM garantiza que esta inicializacion es atomica
+        static final List<OnlineVenta> INSTANCE = new CopyOnWriteArrayList<>();
     }
 
-    public static DatabaseConnectionManager getInstance() {
-        return Holder.INSTANCE;                      // Thread-safe, sin locks
+    public static List<OnlineVenta> getDatabase() {
+        return DatabaseHolder.INSTANCE;   // Siempre la misma lista
+    }
+
+    public OnlineVenta save(OnlineVenta venta) {
+        if (venta.getId() == null) {
+            venta.setId((long) (getDatabase().size() + 1));
+        }
+        getDatabase().add(venta);
+        return venta;
     }
 }
 ```
 
+MS1 implementa el mismo patrón en `PosTransactionRepository` con `CopyOnWriteArrayList<PosTransaction>`.
+
 ### Por qué el Holder Pattern es superior a otras implementaciones de Singleton
 
-| Implementación | Thread-safe | Lazy init | Overhead |
-|---------------|-------------|-----------|----------|
-| Campo estático simple | No (race condition) | No | Ninguno |
-| `synchronized getInstance()` | Sí | Sí | Alto (lock en cada llamada) |
-| Double-checked locking | Sí (con `volatile`) | Sí | Bajo (lock solo primera vez) |
-| **Holder Pattern** (elegido) | **Sí (por la JVM)** | **Sí** | **Ninguno** |
+| Implementacion | Thread-safe | Lazy init | Overhead |
+|---|---|---|---|
+| Campo estatico simple | No (race condition) | No | Ninguno |
+| `synchronized getInstance()` | Si | Si | Alto (lock en cada llamada) |
+| Double-checked locking | Si (con `volatile`) | Si | Bajo (lock solo primera vez) |
+| **Holder Pattern** (elegido) | **Si (por la JVM)** | **Si** | **Ninguno** |
+
+`CopyOnWriteArrayList` se elige sobre `ArrayList` porque permite lecturas concurrentes sin bloqueo, apropiado para un GET que puede ejecutarse mientras el simulador escribe.
 
 ### Por qué mejora la Mantenibilidad y Seguridad
 
-- **Control de recursos:** Un único pool de conexiones es más eficiente que múltiples instancias compitiendo. Las conexiones de base de datos son recursos limitados y costosos.
-- **Consistencia:** La configuración (URL, credenciales, pool size) es compartida y coherente entre todos los repositorios del microservicio.
-- **Thread safety garantizada por la JVM:** No requiere locks explícitos ni anotaciones especiales; la especificación del lenguaje garantiza que la inicialización estática de clases es atómica.
+- **Una sola fuente de verdad:** Todos los threads del microservicio comparten la misma lista. Un POST de `simulador-pos.ps1` y un GET del orq-service leen exactamente los mismos datos.
+- **Thread safety garantizada por la JVM:** No requiere locks explícitos; la especificación del lenguaje garantiza que la inicialización estática de clases es atómica.
+- **Separación de dominios:** MS1 y MS2 tienen repositorios Singleton independientes. El orq los consulta en paralelo y consolida, evitando que un dominio afecte al otro.
 
 ### Alternativa Descartada: Spring IoC Bean Singleton
 
@@ -336,12 +374,13 @@ Spring Boot gestiona beans como Singleton por defecto mediante `@Scope("singleto
 
 ## Tabla Resumen para Defensa Oral
 
-| Componente | Patrón | Categoría GoF | Problema del Cliente | Principios SOLID | Alternativa Descartada |
+| Componente | Patron | Categoria GoF | Problema del Cliente | Principios SOLID | Alternativa Descartada |
 |---|---|---|---|---|---|
 | `frontend-app` | Factory Method | Creacional | Instanciar clientes HTTP por entorno sin acoplamiento | OCP, DIP, SRP | Abstract Factory (YAGNI) |
-| `bff-service` | Proxy | Estructural | Centralizar seguridad y auditoría sin contaminar el Controller | SRP, OCP, LSP, DIP | Decorator (no controla acceso) |
-| `orq-service` | Strategy | Comportamiento | Intercambiar algoritmos de procesamiento en runtime | OCP, SRP, DIP | Template Method (herencia estática) |
-| `data-ms` | Singleton | Creacional | Única instancia thread-safe del pool de conexiones | SRP | Spring IoC (acoplamiento al framework) |
+| `bff-service` | Proxy | Estructural | Centralizar seguridad y auditoria sin contaminar el Controller | SRP, OCP, LSP, DIP | Decorator (no controla acceso) |
+| `orq-service` | Strategy | Comportamiento | Intercambiar algoritmos de procesamiento en runtime; consolidar MS1+MS2 en paralelo | OCP, SRP, DIP | Template Method (herencia estatica) |
+| `ms1-pos` | Singleton | Creacional | Unica lista thread-safe de ventas POS en memoria compartida entre todos los threads | SRP | Spring IoC (acoplamiento al framework) |
+| `ms2-online` | Singleton | Creacional | Unica lista thread-safe de ventas online, dominio separado de MS1 | SRP | Spring IoC (acoplamiento al framework) |
 
 ---
 
@@ -364,6 +403,196 @@ Cada componente tiene tests unitarios con JUnit 5 (Java) y Jest (Node.js). La co
 
 ---
 
+## Arquetipos Maven
+
+### Que es un Arquetipo Maven
+
+Un arquetipo Maven es una plantilla de proyecto que define la estructura de directorios, el `pom.xml` base y las dependencias iniciales. Cuando se genera un proyecto con `spring-boot-starter-parent` como parent POM, Maven hereda la gestion de dependencias, plugins y configuracion de compilacion de Spring Boot, garantizando coherencia entre todos los microservicios del sistema.
+
+En este proyecto, los tres microservicios Spring Boot comparten el mismo parent POM base, lo que significa que las versiones de librerias (Jackson, Tomcat, JUnit, etc.) estan coordinadas centralmente por Spring Boot y no requieren gestion manual en cada servicio.
+
+---
+
+### Arquetipo base por microservicio
+
+Todos los microservicios Spring Boot del proyecto heredan de `spring-boot-starter-parent`, pero con versiones y dependencias distintas segun el rol de cada servicio:
+
+#### MS1-pos — Spring Boot 3.3.0 / Java 21
+
+**Parent POM real (ms1-pos/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.0</version>
+</parent>
+<groupId>com.servicio1</groupId>
+<artifactId>demo</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-amqp (RabbitMQ), mysql-connector-j, spring-cloud-starter-circuitbreaker-resilience4j, lombok
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.servicio1 \
+  -DartifactId=ms1-pos \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+Luego reemplazar el `pom.xml` generado con `spring-boot-starter-parent 3.3.0` como parent, o usar directamente Spring Initializr (start.spring.io) con las dependencias: Web, AMQP, MySQL Driver, Cloud Resilience4j.
+
+---
+
+#### MS2-online — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (ms2-online/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>ms2-online</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, lombok, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=ms2-online \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+Alternativa recomendada con Spring Initializr: seleccionar Spring Boot 3.2.1, Java 17, dependencias Web y Lombok.
+
+---
+
+#### orq-service — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (orq-service/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>orq-service</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=orq-service \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+
+---
+
+#### bff-service — Spring Boot 3.2.1 / Java 17
+
+**Parent POM real (bff-service/pom.xml):**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.1</version>
+</parent>
+<groupId>com.evaluacion</groupId>
+<artifactId>bff-service</artifactId>
+```
+
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
+
+**Comando para generar un proyecto equivalente desde cero:**
+```bash
+mvn archetype:generate \
+  -DgroupId=com.evaluacion \
+  -DartifactId=bff-service \
+  -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.4 \
+  -DinteractiveMode=false
+```
+
+---
+
+#### frontend-app — Node.js (sin Maven)
+
+El frontend no usa Maven sino NPM como gestor de dependencias. El equivalente al arquetipo en el ecosistema Node.js es `npm init`:
+
+```bash
+npm init -y
+npm install express
+npm install --save-dev jest
+```
+
+**package.json base real:**
+```json
+{
+  "name": "frontend-app",
+  "version": "1.0.0",
+  "dependencies": { "express": "^4.18.2" },
+  "devDependencies": { "jest": "^29.7.0" }
+}
+```
+
+---
+
+### Por que spring-boot-starter-parent garantiza coherencia y escalabilidad
+
+**1. Gestion centralizada de versiones**
+
+El parent POM de Spring Boot define las versiones de mas de 300 dependencias comunes (Jackson, Tomcat, JUnit, Mockito, Log4j, etc.). Todos los microservicios que heredan de la misma version obtienen exactamente las mismas versiones de librerias transitivas, eliminando el clasico problema de "dependency hell" donde dos servicios usan versiones incompatibles de la misma libreria.
+
+```xml
+<!-- No es necesario especificar version — la hereda del parent -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+```
+
+**2. Configuracion de compilacion estandarizada**
+
+El parent configura automaticamente:
+- `maven-compiler-plugin` con la version de Java correcta
+- `maven-surefire-plugin` para ejecutar tests con JUnit 5
+- `spring-boot-maven-plugin` para empaquetar el JAR ejecutable (fat JAR)
+- Encoding UTF-8 en todos los archivos fuente
+
+Esto garantiza que `mvn package` produce el mismo tipo de artefacto en todos los servicios: un JAR autocontenido que puede ejecutarse con `java -jar app.jar`.
+
+**3. Escalabilidad del equipo**
+
+Cuando un nuevo integrante necesita crear un microservicio adicional (por ejemplo, un MS3 para inventario), basta con replicar el mismo parent POM y agregar solo las dependencias especificas de ese servicio. La estructura de directorios, la configuracion de tests y el empaquetado son identicos a los servicios existentes, reduciendo la curva de aprendizaje.
+
+**4. Actualizaciones coordinadas**
+
+Cambiar la version de Spring Boot en un microservicio es un cambio de una sola linea en el parent. Todas las dependencias transitivas se actualizan automaticamente a las versiones compatibles certificadas por el equipo de Spring. Esto es especialmente importante en contextos de seguridad: cuando se publica un CVE en una libreria, actualizar el parent a la siguiente version de Spring Boot corrige todas las vulnerabilidades en todos los modulos del ecosistema.
+
+**Tabla resumen de arquetipos por servicio:**
+
+| Servicio | Parent / Base | Version Spring Boot | Java | Dependencias adicionales |
+|---|---|---|---|---|
+| ms1-pos | spring-boot-starter-parent | 3.3.0 | 21 | AMQP, MySQL, Resilience4j, Lombok |
+| ms2-online | spring-boot-starter-parent | 3.2.1 | 17 | Lombok |
+| orq-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
+| bff-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
+| frontend-app | npm (Node.js 18) | — | — | Express, Jest |
+
+---
+
 ## Referencias
 
 - Gamma, E., Helm, R., Johnson, R., Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software.* Addison-Wesley.
@@ -371,3 +600,5 @@ Cada componente tiene tests unitarios con JUnit 5 (Java) y Jest (Node.js). La co
 - Richardson, C. (2018). *Microservices Patterns.* Manning Publications.
 - Bloch, J. (2018). *Effective Java, 3rd Edition.* Addison-Wesley. (Item 3: Singleton con Holder Pattern)
 - OWASP. (2023). *Logging Cheat Sheet.* owasp.org/www-project-cheat-sheets
+- Apache Maven. (2024). *Maven Archetype Plugin.* maven.apache.org/archetype/maven-archetype-plugin
+- Spring. (2024). *Spring Boot Starter Parent.* docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.build-systems.maven
