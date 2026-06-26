@@ -1,0 +1,3 @@
+-- data.sql se deja vacío intencionalmente.
+-- El seed de usuarios se ejecuta via CommandLineRunner en MsAuthApplication.java
+-- para evitar conflictos con la inicializacion de esquema JPA/H2.

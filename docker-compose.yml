@@ -1,17 +1,35 @@
-version: '3.8'
+# ─────────────────────────────────────────────────────────────────────────────
+# Arquitectura Grupo Cordillera — Evaluacion parcial
+#
+#  Web-Container (3000)
+#       ↓
+#  API Gateway / nginx (80) ──→ MS AUTH (8090) ←→ BD USUARIO (H2)
+#       ↓
+#  BFF (8080) ──→ ORQ-DATOS (8082) ←→ BD DATOS (H2)  →  MS1 (8081), MS2 (8083)
+#             ──→ ORQ-IND   (8092) ←→ BD IND  (H2)  →  MS3 (8084), MS4 (8085)
+#             ──→ ORQ-REP   (8093) ←→ BD REP  (H2)  →  MS5 (8086)
+#
+#  Scripts 1-5 → MS1-MS5 (directamente a los puertos expuestos)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Red interna — todos los servicios se comunican por nombre de contenedor
-# ─────────────────────────────────────────────────────────────────────────────
 networks:
   cordillera-net:
     driver: bridge
 
-services:
-  # ── ms1-pos ─────────────────────────────────────────────────────────────────
-  # Patrón: Singleton (CopyOnWriteArrayList en memoria)
-  # Puerto interno: 8081
+volumes:
+  bd-usuario:
+  bd-datos:
+  bd-ind:
+  bd-rep:
 
+services:
+
+  # ── SCRIPTS / SIMULADORES ──────────────────────────────────────────────────
+  # Se ejecutan como scripts PowerShell en el host (simulador-*.ps1)
+  # No tienen contenedor propio; escriben directamente a los puertos expuestos.
+
+  # ── MS1-POS ─────────────────────────────────────────────────────────────────
+  # Patron: Singleton | Puerto: 8081
   ms1-pos:
     build:
       context: ./ms1-pos
@@ -25,14 +43,8 @@ services:
       SERVER_PORT: 8081
     restart: on-failure
 
-  # ── orq-service ─────────────────────────────────────────────────────────────
-  # Patrón: Strategy (algoritmos de procesamiento intercambiables)
-  # Puerto interno: 8080  →  host: 8082
-
-  # ── ms2-online ──────────────────────────────────────────────────────────────
-  # Patron: Singleton (in-memory store de ventas online)
-  # Puerto interno: 8083  ->  host: 8083
-
+  # ── MS2-ONLINE ───────────────────────────────────────────────────────────────
+  # Patron: Singleton | Puerto: 8083
   ms2-online:
     build:
       context: ./ms2-online
@@ -46,33 +58,136 @@ services:
       SERVER_PORT: 8083
     restart: on-failure
 
-  # ── orq-service ─────────────────────────────────────────────────────────────
-  # Patron: Strategy (algoritmos de procesamiento intercambiables)
-  # Puerto interno: 8080  ->  host: 8082
-
-  orq-service:
+  # ── MS3-INVENTARIO ───────────────────────────────────────────────────────────
+  # Patron: Singleton | Puerto: 8084
+  ms3-inventario:
     build:
-      context: ./orq-service
+      context: ./ms3-inventario
       dockerfile: Dockerfile
-    container_name: orq-service-app
+    container_name: ms3-inventario-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+    restart: on-failure
+
+  # ── MS4-EMPLEADOS ────────────────────────────────────────────────────────────
+  # Patron: Singleton | Puerto: 8085
+  ms4-empleados:
+    build:
+      context: ./ms4-empleados
+      dockerfile: Dockerfile
+    container_name: ms4-empleados-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+    restart: on-failure
+
+  # ── MS5-REPORTES ─────────────────────────────────────────────────────────────
+  # Patron: Singleton | Puerto: 8086
+  ms5-reportes:
+    build:
+      context: ./ms5-reportes
+      dockerfile: Dockerfile
+    container_name: ms5-reportes-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8086:8086"
+    environment:
+      SERVER_PORT: 8086
+    restart: on-failure
+
+  # ── MS AUTH ──────────────────────────────────────────────────────────────────
+  # Valida credenciales contra BD USUARIO (H2 en archivo)
+  # Puerto: 8090
+  ms-auth:
+    build:
+      context: ./ms-auth
+      dockerfile: Dockerfile
+    container_name: ms-auth-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8090:8090"
+    environment:
+      SERVER_PORT: 8090
+    volumes:
+      - bd-usuario:/data
+    restart: on-failure
+
+  # ── ORQ-DATOS ────────────────────────────────────────────────────────────────
+  # Agrega ventas POS (MS1) + Online (MS2) | BD DATOS (H2) | Puerto: 8082
+  orq-datos:
+    build:
+      context: ./orq-datos
+      dockerfile: Dockerfile
+    container_name: orq-datos-app
     networks:
       - cordillera-net
     ports:
       - "8082:8080"
     environment:
       SERVER_PORT: 8080
-      # URL del data-ms (MS1) y ms2-online — modelo PULL paralelo
       DATA_MS_URL: http://ms1-pos:8081
       DATA_MS2_URL: http://ms2-online:8083
+    volumes:
+      - bd-datos:/data
     depends_on:
       - ms1-pos
       - ms2-online
     restart: on-failure
 
-  # ── bff-service ─────────────────────────────────────────────────────────────
-  # Patrón: Proxy (seguridad Bearer + auditoría + manejo de errores)
-  # Puerto interno: 8080  →  host: 8080
+  # ── ORQ-IND ──────────────────────────────────────────────────────────────────
+  # Agrega indicadores operacionales (MS3+MS4) | BD IND (H2) | Puerto: 8092
+  orq-ind:
+    build:
+      context: ./orq-ind
+      dockerfile: Dockerfile
+    container_name: orq-ind-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8092:8092"
+    environment:
+      SERVER_PORT: 8092
+      MS3_URL: http://ms3-inventario:8084
+      MS4_URL: http://ms4-empleados:8085
+    volumes:
+      - bd-ind:/data
+    depends_on:
+      - ms3-inventario
+      - ms4-empleados
+    restart: on-failure
 
+  # ── ORQ-REP ──────────────────────────────────────────────────────────────────
+  # Agrega reportes financieros (MS5) | BD REP (H2) | Puerto: 8093
+  orq-rep:
+    build:
+      context: ./orq-rep
+      dockerfile: Dockerfile
+    container_name: orq-rep-app
+    networks:
+      - cordillera-net
+    ports:
+      - "8093:8093"
+    environment:
+      SERVER_PORT: 8093
+      MS5_URL: http://ms5-reportes:8086
+    volumes:
+      - bd-rep:/data
+    depends_on:
+      - ms5-reportes
+    restart: on-failure
+
+  # ── BFF-SERVICE ──────────────────────────────────────────────────────────────
+  # Patron: Proxy | Valida tokens (MS AUTH) + agrega los 3 orquestadores
+  # Puerto: 8080
   bff-service:
     build:
       context: ./bff-service
@@ -84,16 +199,37 @@ services:
       - "8080:8080"
     environment:
       SERVER_PORT: 8080
-      # URL del orq-service dentro de la red Docker
-      ORQ_SERVICE_URL: http://orq-service:8080
+      ORQ_SERVICE_URL: http://orq-datos:8080
+      ORQ_IND_URL: http://orq-ind:8092
+      ORQ_REP_URL: http://orq-rep:8093
+      MS_AUTH_URL: http://ms-auth:8090
     depends_on:
-      - orq-service
+      - ms-auth
+      - orq-datos
+      - orq-ind
+      - orq-rep
     restart: on-failure
 
-  # ── frontend-app ─────────────────────────────────────────────────────────────
-  # Patrón: Factory Method (instancia clientes HTTP según entorno)
-  # Puerto interno: 3000  →  host: 3000
+  # ── API GATEWAY (nginx) ───────────────────────────────────────────────────────
+  # Punto de entrada unico | Enruta: /auth/* → MS AUTH, todo lo demas → BFF
+  # Puerto: 80
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway-app
+    networks:
+      - cordillera-net
+    ports:
+      - "80:80"
+    depends_on:
+      - bff-service
+      - ms-auth
+    restart: on-failure
 
+  # ── FRONTEND-APP (Web-Container) ──────────────────────────────────────────────
+  # Patron: Factory Method | Sirve la UI y proxea via API Gateway
+  # Puerto: 3000
   frontend-app:
     build:
       context: ./frontend-app
@@ -106,8 +242,9 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: production
-      # URL del bff-service dentro de la red Docker
-      BFF_URL: http://bff-service:8080
+      # BFF_URL apunta al API Gateway dentro de la red Docker
+      BFF_URL: http://api-gateway:80
     depends_on:
-      - bff-service
+      - api-gateway
     restart: on-failure
+

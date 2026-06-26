@@ -1,21 +1,14 @@
 # Etapa de construcción (Build stage)
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copiar el wrapper de Maven y los archivos de configuración
-COPY mvnw .
-COPY .mvn .mvn
+# Copiar los archivos de configuración y descargar dependencias
 COPY pom.xml .
-
-# Dar permisos de ejecución al wrapper de Maven
-RUN chmod +x ./mvnw
-
-# Descargar las dependencias (optimización de caché de Docker)
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -q
 
 # Copiar el código fuente y compilar
-COPY src src
-RUN ./mvnw clean package -DskipTests
+COPY src ./src
+RUN mvn clean package -DskipTests -q
 
 # Etapa de ejecución (Run stage)
 FROM eclipse-temurin:21-jre-alpine

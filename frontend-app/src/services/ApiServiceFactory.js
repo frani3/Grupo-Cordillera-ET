@@ -60,14 +60,15 @@ class ApiServiceFactory {
   // Las URLs se resuelven en el momento de instanciar, leyendo process.env.
   // Esto permite que Docker inyecte BFF_URL sin recompilar la imagen.
   static get ENVIRONMENTS() {
-    const bffUrl = (typeof process !== "undefined" && process.env.BFF_URL)
+    // BFF_URL apunta al API Gateway en Docker (puerto 80), al BFF directo en desarrollo
+    const gatewayUrl = (typeof process !== "undefined" && process.env.BFF_URL)
       ? process.env.BFF_URL
       : null;
 
     return {
-      production:  { baseUrl: bffUrl || "http://bff-service:8080", timeout: 5000 },
-      development: { baseUrl: bffUrl || "http://localhost:8080",   timeout: 10000 },
-      test:        { baseUrl: bffUrl || "http://localhost:8080",   timeout: 1000 },
+      production:  { baseUrl: gatewayUrl || "http://api-gateway:80", timeout: 5000 },
+      development: { baseUrl: gatewayUrl || "http://localhost:80",   timeout: 10000 },
+      test:        { baseUrl: gatewayUrl || "http://localhost:8080", timeout: 1000 },
     };
   }
 

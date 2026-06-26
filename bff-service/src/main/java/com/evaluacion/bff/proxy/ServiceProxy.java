@@ -1,5 +1,6 @@
 package com.evaluacion.bff.proxy;
 
+import com.evaluacion.bff.auth.AuthClient;
 import com.evaluacion.bff.model.DataResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,42 +12,34 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-// PATRÓN PROXY: Justificación técnica para evaluación parcial 2
-//
-// ServiceProxy implementa tres tipos de Proxy simultáneamente:
-//
-//   1. Proxy de Protección → valida el token Bearer antes de propagar.
-//      Centraliza la seguridad: ningún servicio interno necesita duplicarla.
-//
-//   2. Proxy de Auditoría  → registra request/response con timestamp
-//      para trazabilidad y cumplimiento (OWASP Logging Cheat Sheet).
-//
-//   3. Proxy de Error      → captura excepciones del RealSubject y las
-//      convierte en respuestas tipadas. No expone stack traces al cliente.
-//
-// El cliente (BffController) llama al Proxy igual que al servicio real
-// gracias a IOrqService → transparencia total (principio LSP).
+// PATRON PROXY:
+//   1. Proxy de Proteccion → valida token via MS AUTH antes de propagar.
+//   2. Proxy de Auditoria  → registra request/response con timestamp.
+//   3. Proxy de Error      → captura excepciones y retorna respuestas tipadas.
 @Service
 public class ServiceProxy implements IOrqService {
 
     private final IOrqService realSubject;
+    private final AuthClient authClient;
 
-    // Constructor usado por Spring — ORQ_SERVICE_URL se inyecta desde application.properties
     @Autowired
     public ServiceProxy(
             RestTemplate restTemplate,
-            @Value("${orq.service.url}") String serviceUrl) {
+            @Value("${orq.service.url}") String serviceUrl,
+            AuthClient authClient) {
         this.realSubject = new OrqServiceClient(restTemplate, serviceUrl);
+        this.authClient = authClient;
     }
 
-    // Constructor package-private para tests unitarios (inyecta mock del RealSubject)
-    ServiceProxy(IOrqService realSubject) {
+    // Constructor package-private para tests unitarios
+    ServiceProxy(IOrqService realSubject, AuthClient authClient) {
         this.realSubject = realSubject;
+        this.authClient = authClient;
     }
 
     @Override
     public DataResponse fetchData(String requestId, String authToken) {
-        validateBearerToken(authToken);
+        validateToken(authToken);
         auditLog("REQUEST", requestId, authToken);
 
         DataResponse response;
@@ -63,7 +56,7 @@ public class ServiceProxy implements IOrqService {
 
     @Override
     public List<Map<String, Object>> fetchVentas(String authToken) {
-        validateBearerToken(authToken);
+        validateToken(authToken);
         auditLog("REQUEST", "ventas", authToken);
         try {
             List<Map<String, Object>> ventas = realSubject.fetchVentas(authToken);
@@ -75,12 +68,15 @@ public class ServiceProxy implements IOrqService {
         }
     }
 
-    private void validateBearerToken(String authToken) {
+    private void validateToken(String authToken) {
         if (authToken == null || authToken.isBlank()) {
             throw new SecurityException("Token de autorización ausente. Incluir 'Authorization: Bearer <token>'");
         }
         if (!authToken.startsWith("Bearer ")) {
             throw new SecurityException("Formato de token inválido. Se requiere esquema Bearer.");
+        }
+        if (!authClient.validate(authToken)) {
+            throw new SecurityException("Token inválido o expirado. Use POST /auth/login para obtener un token.");
         }
     }
 
