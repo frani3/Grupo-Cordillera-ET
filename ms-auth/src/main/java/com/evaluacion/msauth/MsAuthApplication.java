@@ -14,18 +14,24 @@ public class MsAuthApplication {
         SpringApplication.run(MsAuthApplication.class, args);
     }
 
-    // Seed inicial de usuarios si la BD está vacía
     @Bean
     CommandLineRunner seedUsers(UsuarioRepository repo) {
         return args -> {
-            if (repo.count() == 0) {
-                // SHA-256 de "admin123"
-                repo.save(new Usuario(null, "admin",
-                    "240be518fabd2724ddb6f04eeb1da5967448d7e831d06ce1da3c3e818b4a741a", "ADMIN"));
-                // SHA-256 de "user123"
-                repo.save(new Usuario(null, "usuario",
-                    "57a519a26f6edd7073c2d3e08bab30a23eb19e8f1d671c3fd8c3dbc38e6a6938", "USER"));
-                System.out.println("[ms-auth] Usuarios semilla creados: admin/admin123, usuario/user123");
+            // SHA-256 correctos (verificados con java.security.MessageDigest UTF-8)
+            final String HASH_ADMIN123 = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9";
+            final String HASH_USER123  = "e606e38b0d8c19b24cf0ee3808183162ea7cd63ff7912dbb22b5e803286b4446";
+
+            boolean wrongHash = repo.findByUsername("admin")
+                    .map(u -> !HASH_ADMIN123.equalsIgnoreCase(u.getPasswordHash()))
+                    .orElse(true);
+
+            if (repo.count() == 0 || wrongHash) {
+                repo.deleteAll();
+                repo.save(new Usuario(null, "admin",   HASH_ADMIN123, "ADMIN"));
+                repo.save(new Usuario(null, "usuario", HASH_USER123,  "USER"));
+                System.out.println("[ms-auth] Usuarios semilla inicializados: admin/admin123, usuario/user123");
+            } else {
+                System.out.println("[ms-auth] Usuarios semilla ya existen con hashes correctos.");
             }
         };
     }

@@ -1,6 +1,9 @@
 package com.evaluacion.bff.controller;
 
 import com.evaluacion.bff.auth.AuthClient;
+import com.evaluacion.bff.client.Ms3Client;
+import com.evaluacion.bff.client.Ms4Client;
+import com.evaluacion.bff.client.Ms5Client;
 import com.evaluacion.bff.client.OrqIndClient;
 import com.evaluacion.bff.client.OrqRepClient;
 import com.evaluacion.bff.model.DataResponse;
@@ -24,13 +27,20 @@ public class BffController {
     private final AuthClient authClient;
     private final OrqIndClient orqIndClient;
     private final OrqRepClient orqRepClient;
+    private final Ms3Client ms3Client;
+    private final Ms4Client ms4Client;
+    private final Ms5Client ms5Client;
 
     public BffController(ServiceProxy serviceProxy, AuthClient authClient,
-                         OrqIndClient orqIndClient, OrqRepClient orqRepClient) {
+                         OrqIndClient orqIndClient, OrqRepClient orqRepClient,
+                         Ms3Client ms3Client, Ms4Client ms4Client, Ms5Client ms5Client) {
         this.serviceProxy = serviceProxy;
         this.authClient = authClient;
         this.orqIndClient = orqIndClient;
         this.orqRepClient = orqRepClient;
+        this.ms3Client = ms3Client;
+        this.ms4Client = ms4Client;
+        this.ms5Client = ms5Client;
     }
 
     // POST /api/proxy/login — delega login a MS AUTH (sin requerir token previo)
@@ -122,6 +132,36 @@ public class BffController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    // GET /api/proxy/datos/inventario — datos crudos de MS3
+    @GetMapping("/datos/inventario")
+    public ResponseEntity<List<Map<String, Object>>> getDatosInventario(
+            @RequestHeader(value = "Authorization", required = false) String authToken) {
+        if (!authClient.validate(authToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(ms3Client.fetchItems());
+    }
+
+    // GET /api/proxy/datos/empleados — datos crudos de MS4
+    @GetMapping("/datos/empleados")
+    public ResponseEntity<List<Map<String, Object>>> getDatosEmpleados(
+            @RequestHeader(value = "Authorization", required = false) String authToken) {
+        if (!authClient.validate(authToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(ms4Client.fetchRegistros());
+    }
+
+    // GET /api/proxy/datos/eventos — datos crudos de MS5
+    @GetMapping("/datos/eventos")
+    public ResponseEntity<List<Map<String, Object>>> getDatosEventos(
+            @RequestHeader(value = "Authorization", required = false) String authToken) {
+        if (!authClient.validate(authToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(ms5Client.fetchEventos());
     }
 
     // GET /api/proxy/health — publico

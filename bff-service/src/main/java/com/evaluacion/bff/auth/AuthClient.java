@@ -2,6 +2,7 @@ package com.evaluacion.bff.auth;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -48,6 +49,8 @@ public class AuthClient {
                     Map.class
             );
             return resp != null ? resp : Map.of("error", "Respuesta vacía de ms-auth");
+        } catch (HttpClientErrorException.Unauthorized e) {
+            return Map.of("error", "Credenciales inválidas");
         } catch (Exception e) {
             return Map.of("error", "ms-auth no disponible: " + e.getMessage());
         }

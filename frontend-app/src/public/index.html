@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupo Cordillera — Sistema de Gestión</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- ── LOGIN ──────────────────────────────────────────────────────────────── -->
+  <div id="view-login" class="view">
+    <div class="login-bg">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="logo-monogram">GC</div>
+          <h1>Grupo Cordillera</h1>
+          <p>Sistema de Gestión Centralizada · 30 sucursales</p>
+        </div>
+        <form id="login-form" autocomplete="off" novalidate>
+          <div class="form-group">
+            <label for="login-username">Usuario</label>
+            <input type="text" id="login-username" name="username"
+                   placeholder="admin" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" name="password"
+                   placeholder="••••••••" required>
+          </div>
+          <div class="form-group">
+            <label for="login-role">Acceder como</label>
+            <select id="login-role" name="role">
+              <option value="admin">Administrador</option>
+              <option value="ejecutivo">Ejecutivo</option>
+              <option value="analista">Analista</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Ingresar al sistema</button>
+          <div id="login-error" class="login-error hidden"></div>
+        </form>
+        <div class="login-hint">Credenciales demo: <strong>admin</strong> / <strong>admin123</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── APLICACION PRINCIPAL ───────────────────────────────────────────────── -->
+  <div id="view-app" class="view hidden">
+
+    <aside id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-monogram">GC</div>
+        <div class="brand-text">
+          <span class="brand-name">Grupo Cordillera</span>
+          <span class="brand-sub">30 sucursales</span>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav">
+        <!-- inyectado por app.js según rol -->
+      </nav>
+      <div class="sidebar-footer">v1.0 · ET2 2026</div>
+    </aside>
+
+    <div id="app-wrapper">
+      <header id="app-header">
+        <div class="header-left">
+          <span class="header-section-label">Módulo:</span>
+          <span id="header-breadcrumb" class="header-breadcrumb"></span>
+        </div>
+        <div class="header-right">
+          <span id="header-username" class="header-username"></span>
+          <span id="header-role-badge" class="role-badge"></span>
+          <button id="logout-btn" class="btn btn-outline btn-sm">Cerrar sesión</button>
+        </div>
+      </header>
+      <main id="app-content">
+        <!-- contenido del módulo activo -->
+      </main>
+    </div>
+
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/indicadores.js"></script>
+  <script src="/js/datos.js"></script>
+  <script src="/js/reportes.js"></script>
+  <script src="/js/usuarios.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

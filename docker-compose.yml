@@ -203,6 +203,9 @@ services:
       ORQ_IND_URL: http://orq-ind:8092
       ORQ_REP_URL: http://orq-rep:8093
       MS_AUTH_URL: http://ms-auth:8090
+      MS3_URL: http://ms3-inventario:8084
+      MS4_URL: http://ms4-empleados:8085
+      MS5_URL: http://ms5-reportes:8086
     depends_on:
       - ms-auth
       - orq-datos
