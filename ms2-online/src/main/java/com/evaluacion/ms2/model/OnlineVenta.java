@@ -17,6 +17,7 @@ public class OnlineVenta {
     private LocalDate fecha;
     private Double montoTotal;
     private String metodoPago;
+    private String sucursal;
     private String status;
     private LocalDateTime createdAt;
 

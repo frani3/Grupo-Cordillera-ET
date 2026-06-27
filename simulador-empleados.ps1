@@ -55,10 +55,10 @@ Write-Host "Enviando registros a: $endpoint"
 Write-Host "Presiona Ctrl+C para detener`n"
 
 Esperar-Servicio $endpoint
-Write-Host "=== Carga inicial: enviando 40 registros historicos ===" -ForegroundColor Yellow
-for ($i = 1; $i -le 40; $i++) {
+Write-Host "=== Carga inicial: enviando 100 registros historicos ===" -ForegroundColor Yellow
+for ($i = 1; $i -le 100; $i++) {
     Enviar-Empleado
-    if ($i % 10 -eq 0) { Write-Host "  [$i/40] registros enviados" -ForegroundColor DarkGray }
+    if ($i % 20 -eq 0) { Write-Host "  [$i/100] registros enviados" -ForegroundColor DarkGray }
     Start-Sleep -Milliseconds 300
 }
 Write-Host "=== Carga inicial completada. Iniciando modo continuo... ===`n" -ForegroundColor Green

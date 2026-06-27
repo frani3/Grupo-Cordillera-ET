@@ -2,7 +2,10 @@ window.App = window.App || {};
 
 App.Datos = (() => {
   const PAGE_SIZE  = 20;
-  const SUCURSALES = ['norte', 'sur', 'centro', 'oriente', 'poniente'];
+  const SUCURSALES = [
+    'Santiago Centro', 'Providencia', 'Las Condes', 'Maipu',
+    'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
+  ];
 
   const TABS = [
     { id: 'ventas',     label: 'Ventas'             },
@@ -13,7 +16,7 @@ App.Datos = (() => {
 
   const COLUMNS = {
     ventas: [
-      { key: 'trx_id',     label: 'ID',        fmt: v => v ?? '—' },
+      { key: 'transactionId', label: 'ID',      fmt: v => v ?? '—' },
       { key: 'canal',      label: 'Canal',      fmt: v => v ?? '—' },
       { key: 'sucursal',   label: 'Sucursal',   fmt: v => v ?? '—' },
       { key: 'montoTotal', label: 'Monto',      fmt: v => '$' + parseFloat(v || 0).toLocaleString('es-CL') },
@@ -74,24 +77,7 @@ App.Datos = (() => {
     } catch { return []; }
   }
 
-  function isAnomaly(row, tab) {
-    switch (tab) {
-      case 'ventas':
-        return parseFloat(row.montoTotal) === 0 || row.montoTotal === null || row.montoTotal === undefined;
-      case 'inventario':
-        return parseInt(row.cantidad) < 0 || !row.nombre || String(row.nombre).trim() === '';
-      case 'empleados': {
-        const h = parseFloat(row.horasTrabajadas);
-        return h > 12 || h < 0 || isNaN(h);
-      }
-      case 'eventos':
-        return parseFloat(row.monto) === 0 || row.monto === null || row.monto === undefined;
-      default:
-        return false;
-    }
-  }
-
-  function filterControls(tab) {
+function filterControls(tab) {
     let extra = '';
     if (tab === 'ventas') {
       extra = `<select id="fc-canal">
@@ -100,7 +86,14 @@ App.Datos = (() => {
         <option>online</option>
       </select>`;
     } else if (tab === 'inventario') {
-      extra = `<input type="text" id="fc-categoria" placeholder="Categoría…">`;
+      extra = `<select id="fc-categoria">
+        <option value="">Categoría (todas)</option>
+        <option value="electronica">Electrónica</option>
+        <option value="ropa">Ropa</option>
+        <option value="alimentos">Alimentos</option>
+        <option value="hogar">Hogar</option>
+        <option value="deportes">Deportes</option>
+      </select>`;
     } else if (tab === 'empleados') {
       extra = `<select id="fc-turno">
         <option value="">Turno (todos)</option>
@@ -150,8 +143,8 @@ App.Datos = (() => {
       const c = document.getElementById('fc-canal')?.value;
       if (c) result = result.filter(r => r.canal === c);
     } else if (activeTab === 'inventario') {
-      const cat = (document.getElementById('fc-categoria')?.value || '').toLowerCase();
-      if (cat) result = result.filter(r => (r.categoria || '').toLowerCase().includes(cat));
+      const cat = document.getElementById('fc-categoria')?.value || '';
+      if (cat) result = result.filter(r => r.categoria === cat);
     } else if (activeTab === 'empleados') {
       const t = document.getElementById('fc-turno')?.value;
       if (t) result = result.filter(r => r.turno === t);
@@ -191,7 +184,7 @@ App.Datos = (() => {
           <thead><tr>${cols.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>
           <tbody>
             ${rows.map(row => `
-              <tr class="${isAnomaly(row, activeTab) ? 'row-anomaly' : ''}">
+              <tr>
                 ${cols.map(c => `<td>${c.fmt(row[c.key])}</td>`).join('')}
               </tr>`).join('')}
           </tbody>
@@ -231,8 +224,7 @@ App.Datos = (() => {
             onclick="App.Datos.switchTab('${t.id}')">${t.label}</button>`).join('')}
       </div>
       <div class="filter-bar" id="filter-bar">${filterControls(activeTab)}</div>
-      <div class="anomaly-legend"><span class="anomaly-dot"></span> Fila con anomalía detectada</div>
-      <div id="table-container" class="table-container"><div class="loading">Cargando datos…</div></div>
+<div id="table-container" class="table-container"><div class="loading">Cargando datos…</div></div>
       <div id="pagination"></div>
     `;
   }

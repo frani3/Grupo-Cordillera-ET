@@ -2,7 +2,10 @@ window.App = window.App || {};
 
 App.Reportes = (() => {
   const HISTORY_KEY = 'gc_reportes_historial';
-  const SUCURSALES  = ['norte', 'sur', 'centro', 'oriente', 'poniente'];
+  const SUCURSALES  = [
+    'Santiago Centro', 'Providencia', 'Las Condes', 'Maipu',
+    'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
+  ];
   const TIPOS       = ['cierre-diario', 'conciliacion', 'descuento', 'devolucion', 'bonificacion'];
 
   let container    = null;
