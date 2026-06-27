@@ -3,7 +3,7 @@ window.App = window.App || {};
 App.Router = (() => {
   const MODULES = {
     admin:     ['indicadores', 'datos', 'reportes', 'usuarios'],
-    ejecutivo: ['datos', 'reportes'],
+    ejecutivo: ['indicadores', 'datos', 'reportes'],
     analista:  ['indicadores', 'datos', 'reportes'],
   };
 

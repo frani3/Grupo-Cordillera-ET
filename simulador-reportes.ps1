@@ -1,4 +1,4 @@
-# SCRIPT 5 — Simulador de Reportes Financieros
+# SCRIPT 5 - Simulador de Reportes Financieros
 # Envia eventos financieros a MS5-REPORTES (puerto 8086)
 # Uso: .\simulador-reportes.ps1
 # Detener: Ctrl+C
@@ -8,7 +8,7 @@ $tipos = @("cierre-diario", "conciliacion", "descuento", "devolucion", "bonifica
 $sucursales = @("norte", "sur", "centro", "oriente", "poniente")
 $contador = 1
 
-Write-Host "=== SCRIPT 5 — Simulador de Reportes Financieros ==="
+Write-Host "=== SCRIPT 5 - Simulador de Reportes Financieros ==="
 Write-Host "Enviando eventos a: $endpoint"
 Write-Host "Presiona Ctrl+C para detener`n"
 
@@ -26,7 +26,7 @@ while ($true) {
         $body = $evento | ConvertTo-Json
         $resp = Invoke-RestMethod -Uri $endpoint -Method POST `
             -Body $body -ContentType "application/json"
-        Write-Host "[$contador] OK → rep_id=$($evento.reporte_id) tipo=$($evento.tipo) monto=`$$($evento.monto)"
+        Write-Host "[$contador] OK -> rep_id=$($evento.reporte_id) tipo=$($evento.tipo) monto=`$$($evento.monto)"
     } catch {
         Write-Warning "[$contador] ERROR: $($_.Exception.Message)"
     }
