@@ -4,46 +4,67 @@ App.Indicadores = (() => {
   const THRESHOLD_KEY = 'gc_kpi_thresholds';
 
   const DEFAULTS = {
-    ventasTotales:       50000,
-    totalTransacciones:  10,
-    itemsInventario:     20,
-    horasTrabajadas:     100,
-    eventosFinancieros:  5,
+    ventasTotales:   500000,
+    ticketPromedio:   20000,
+    pctOnline:           20,
+    itemsInventario:     10,
+    promedioHoras:        4,
+    montoEventos:    100000,
   };
 
   const KPIS = [
     {
-      id:     'ventasTotales',
-      label:  'Ventas Totales',
-      format: v => '$' + Math.round(v).toLocaleString('es-CL'),
+      id:      'ventasTotales',
+      label:   'Ventas Totales',
+      format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext: data => `${data.totalTransacciones} transacciones`,
     },
     {
-      id:     'totalTransacciones',
-      label:  'Total Transacciones',
-      format: v => v.toString(),
+      id:      'ticketPromedio',
+      label:   'Ticket Promedio',
+      format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext: () => 'Por transacción',
     },
     {
-      id:     'itemsInventario',
-      label:  'Items en Inventario',
-      format: v => v.toString(),
+      id:      'pctOnline',
+      label:   'Ventas Online',
+      format:  v => v + '%',
+      subtext: data => `${data.transaccionesOnline} online / ${data.transaccionesTienda} tienda`,
     },
     {
-      id:     'horasTrabajadas',
-      label:  'Horas Trabajadas Totales',
-      format: v => v.toFixed(1) + ' hrs',
+      id:      'itemsInventario',
+      label:   'Items en Inventario',
+      format:  v => v.toLocaleString('es-CL'),
+      subtext: data => data.stockCritico > 0
+        ? `⚠ ${data.stockCritico} con stock crítico (<10 unidades)`
+        : '✓ Sin stock crítico',
     },
     {
-      id:     'eventosFinancieros',
-      label:  'Eventos Financieros',
-      format: v => v.toString(),
+      id:      'promedioHoras',
+      label:   'Horas Prom. por Empleado',
+      format:  v => v.toFixed(1) + ' hrs',
+      subtext: data => `${data.totalEventos} registros de turno`,
+    },
+    {
+      id:      'montoEventos',
+      label:   'Monto Eventos Financieros',
+      format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext: data => `${data.totalEventos} eventos`,
     },
   ];
 
-  let thresholds      = {};
-  let currentValues   = {};
-  let container       = null;
-  let configTarget    = null;
+  const SUCURSALES = [
+    'Santiago Centro', 'Providencia', 'Las Condes', 'Maipu',
+    'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
+  ];
+
+  let thresholds    = {};
+  let currentValues = {};
+  let container     = null;
+  let configTarget  = null;
   let refreshInterval = null;
+  let rawData       = { ventas: [], inventario: [], empleados: [], eventos: [] };
+  let sucursalFiltro = '';
 
   function loadThresholds() {
     try {
@@ -58,24 +79,54 @@ App.Indicadores = (() => {
     localStorage.setItem(THRESHOLD_KEY, JSON.stringify(thresholds));
   }
 
-  async function fetchData() {
-    const [ventasRes, indRes, repRes] = await Promise.allSettled([
+  async function fetchAllRaw() {
+    const [ventasRes, invRes, empRes, evtRes] = await Promise.allSettled([
       App.Facade.getVentas(),
-      App.Facade.getIndicadores(),
-      App.Facade.getReportes(),
+      App.Facade.getInventario(),
+      App.Facade.getEmpleados(),
+      App.Facade.getEventos(),
     ]);
 
-    const ventas = ventasRes.status === 'fulfilled' && Array.isArray(ventasRes.value)
-      ? ventasRes.value : [];
-    const ind    = (indRes.status === 'fulfilled' && !indRes.value?.error)  ? indRes.value  : {};
-    const rep    = (repRes.status === 'fulfilled' && !repRes.value?.error)  ? repRes.value  : {};
+    return {
+      ventas:     ventasRes.status === 'fulfilled' && Array.isArray(ventasRes.value) ? ventasRes.value : [],
+      inventario: invRes.status    === 'fulfilled' && Array.isArray(invRes.value)    ? invRes.value    : [],
+      empleados:  empRes.status    === 'fulfilled' && Array.isArray(empRes.value)    ? empRes.value    : [],
+      eventos:    evtRes.status    === 'fulfilled' && Array.isArray(evtRes.value)    ? evtRes.value    : [],
+    };
+  }
+
+  function computeValues(data, sucursal) {
+    const v  = sucursal ? data.ventas.filter(r => r.sucursal === sucursal)     : data.ventas;
+    const i  = sucursal ? data.inventario.filter(r => r.sucursal === sucursal) : data.inventario;
+    const e  = sucursal ? data.empleados.filter(r => r.sucursal === sucursal)  : data.empleados;
+    const ev = sucursal ? data.eventos.filter(r => r.sucursal === sucursal)    : data.eventos;
+
+    const ventasTotales         = v.reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
+    const transaccionesOnline   = v.filter(r => r.canal === 'Online').length;
+    const transaccionesTienda   = v.filter(r => r.canal === 'Tienda Física').length;
+    const totalTransacciones    = v.length;
+    const ticketPromedio        = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
+    const itemsInventario       = i.length;
+    const stockCritico          = i.filter(r => (parseInt(r.cantidad) || 0) < 10).length;
+    const totalHoras            = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
+    const promedioHoras         = e.length > 0 ? totalHoras / e.length : 0;
+    const montoEventos          = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+    const totalEventos          = ev.length;
+    const pctOnline             = totalTransacciones > 0
+      ? Math.round((transaccionesOnline / totalTransacciones) * 100) : 0;
 
     return {
-      ventasTotales:      ventas.reduce((s, v) => s + (parseFloat(v.montoTotal) || 0), 0),
-      totalTransacciones: ventas.length,
-      itemsInventario:    parseInt(ind.itemsInventario)       || 0,
-      horasTrabajadas:    parseFloat(ind.totalHorasTrabajadas) || 0,
-      eventosFinancieros: parseInt(rep.totalEventos)           || 0,
+      ventasTotales,
+      totalTransacciones,
+      ticketPromedio,
+      transaccionesOnline,
+      transaccionesTienda,
+      itemsInventario,
+      stockCritico,
+      promedioHoras,
+      montoEventos,
+      totalEventos,
+      pctOnline,
     };
   }
 
@@ -84,10 +135,24 @@ App.Indicadores = (() => {
     return role === 'analista' || role === 'admin';
   }
 
+  function formatThreshold(id) {
+    const v = thresholds[id];
+    if (id === 'ventasTotales' || id === 'ticketPromedio' || id === 'montoEventos') {
+      return '$' + Math.round(v).toLocaleString('es-CL');
+    }
+    if (id === 'pctOnline') return v + '%';
+    if (id === 'promedioHoras') return v + ' hrs';
+    return String(v);
+  }
+
   function renderShell() {
     container.innerHTML = `
       <div class="page-header">
         <h2>Panel de Indicadores</h2>
+        <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
+          <option value="">Todas las sucursales</option>
+          ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
         <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
       </div>
       <div class="kpi-grid" id="kpi-grid">
@@ -98,6 +163,7 @@ App.Indicadores = (() => {
               <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
             </div>
             <div class="kpi-value" id="val-${k.id}">—</div>
+            <div class="kpi-sub" id="sub-${k.id}" style="font-size:0.78rem;color:#666;margin:2px 0 6px 0;">—</div>
             <div class="kpi-footer">
               <span class="kpi-threshold" id="thr-${k.id}">Umbral: ${formatThreshold(k.id)}</span>
               ${canConfigure()
@@ -123,22 +189,25 @@ App.Indicadores = (() => {
     `;
   }
 
-  function formatThreshold(id) {
-    const v = thresholds[id];
-    return id === 'ventasTotales' ? '$' + Math.round(v).toLocaleString('es-CL') : String(v);
-  }
-
   function applyValues(values) {
     currentValues = values;
     KPIS.forEach(k => {
-      const val   = values[k.id] ?? 0;
-      const ok    = val >= thresholds[k.id];
-      const valEl = document.getElementById(`val-${k.id}`);
-      const semEl = document.getElementById(`sem-${k.id}`);
-      const cardEl= document.getElementById(`kpi-card-${k.id}`);
+      const val    = values[k.id] ?? 0;
+      const ok     = val >= thresholds[k.id];
+      const valEl  = document.getElementById(`val-${k.id}`);
+      const subEl  = document.getElementById(`sub-${k.id}`);
+      const semEl  = document.getElementById(`sem-${k.id}`);
+      const cardEl = document.getElementById(`kpi-card-${k.id}`);
       if (valEl)  valEl.textContent = k.format(val);
-      if (semEl)  { semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`; semEl.title = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral'; }
-      if (cardEl) { cardEl.classList.toggle('card-green', ok); cardEl.classList.toggle('card-red', !ok); }
+      if (subEl && k.subtext) subEl.textContent = k.subtext(values);
+      if (semEl)  {
+        semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
+        semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
+      }
+      if (cardEl) {
+        cardEl.classList.toggle('card-green', ok);
+        cardEl.classList.toggle('card-red', !ok);
+      }
     });
     const tsEl = document.getElementById('kpi-ts');
     if (tsEl) tsEl.textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es-CL');
@@ -146,7 +215,8 @@ App.Indicadores = (() => {
 
   return {
     async init(cont) {
-      container = cont;
+      container      = cont;
+      sucursalFiltro = '';
       loadThresholds();
       renderShell();
       await this.refresh();
@@ -162,11 +232,16 @@ App.Indicadores = (() => {
 
     async refresh() {
       try {
-        const values = await fetchData();
-        applyValues(values);
+        rawData = await fetchAllRaw();
+        applyValues(computeValues(rawData, sucursalFiltro));
       } catch (err) {
         console.error('Error indicadores:', err);
       }
+    },
+
+    filterSucursal() {
+      sucursalFiltro = document.getElementById('kpi-sucursal')?.value || '';
+      applyValues(computeValues(rawData, sucursalFiltro));
     },
 
     openConfig(kpiId) {
