@@ -5,10 +5,10 @@ App.Datos = (() => {
   const SUCURSALES = ['norte', 'sur', 'centro', 'oriente', 'poniente'];
 
   const TABS = [
-    { id: 'ventas',     label: 'Ventas',              endpoint: '/api/ventas' },
-    { id: 'inventario', label: 'Inventario',           endpoint: '/api/datos/inventario' },
-    { id: 'empleados',  label: 'Empleados',            endpoint: '/api/datos/empleados' },
-    { id: 'eventos',    label: 'Eventos Financieros',  endpoint: '/api/datos/eventos' },
+    { id: 'ventas',     label: 'Ventas'             },
+    { id: 'inventario', label: 'Inventario'          },
+    { id: 'empleados',  label: 'Empleados'           },
+    { id: 'eventos',    label: 'Eventos Financieros' },
   ];
 
   const COLUMNS = {
@@ -46,6 +46,14 @@ App.Datos = (() => {
     ],
   };
 
+  // Mapeo tab → método App.Facade (Patrón Facade en browser)
+  const FACADE_MAP = {
+    ventas:     () => App.Facade.getVentas(),
+    inventario: () => App.Facade.getInventario(),
+    empleados:  () => App.Facade.getEmpleados(),
+    eventos:    () => App.Facade.getEventos(),
+  };
+
   let activeTab     = 'ventas';
   let allData       = [];
   let filteredData  = [];
@@ -57,15 +65,11 @@ App.Datos = (() => {
     try { return new Date(v).toLocaleDateString('es-CL'); } catch { return String(v); }
   }
 
-  function token() { return 'Bearer ' + (App.Auth.getSession()?.token || ''); }
-
   async function loadData(tab) {
-    const ep = TABS.find(t => t.id === tab)?.endpoint;
-    if (!ep) return [];
+    const fn = FACADE_MAP[tab];
+    if (!fn) return [];
     try {
-      const r = await fetch(ep, { headers: { Authorization: token() } });
-      if (!r.ok) return [];
-      const d = await r.json();
+      const d = await fn();
       return Array.isArray(d) ? d : [];
     } catch { return []; }
   }

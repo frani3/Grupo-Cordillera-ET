@@ -9,8 +9,6 @@ App.Reportes = (() => {
   let lastData     = null;
   let lastParams   = null;
 
-  function token() { return 'Bearer ' + (App.Auth.getSession()?.token || ''); }
-
   function loadHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
     catch { return []; }
@@ -152,8 +150,8 @@ App.Reportes = (() => {
       actionsEl.innerHTML = '';
 
       try {
-        const res    = await fetch('/api/datos/eventos', { headers: { Authorization: token() } });
-        let eventos  = res.ok ? await res.json() : [];
+        let eventos = [];
+        try { eventos = await App.Facade.getEventos(); } catch { eventos = []; }
         if (!Array.isArray(eventos)) eventos = [];
 
         // Filtrar en cliente

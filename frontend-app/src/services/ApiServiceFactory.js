@@ -69,17 +69,47 @@ class AuthService extends ApiService {
   }
 }
 
+// Servicios agrupados (compatibilidad)
 class DashboardService extends ApiService {
-  async fetchDashboard() { return this.get('/api/proxy/dashboard'); }
-  async fetchVentas()    { return this.get('/api/proxy/ventas'); }
+  async fetchDashboard()   { return this.get('/api/proxy/dashboard'); }
+  async fetchVentas()      { return this.get('/api/proxy/ventas'); }
   async fetchIndicadores() { return this.get('/api/proxy/indicadores'); }
-  async fetchReportes()  { return this.get('/api/proxy/reportes'); }
+  async fetchReportes()    { return this.get('/api/proxy/reportes'); }
 }
 
 class DatosService extends ApiService {
   async fetchInventario() { return this.get('/api/proxy/datos/inventario'); }
   async fetchEmpleados()  { return this.get('/api/proxy/datos/empleados'); }
   async fetchEventos()    { return this.get('/api/proxy/datos/eventos'); }
+}
+
+// Servicios individuales — cada uno encapsula un único recurso del dominio
+class IndicadoresService extends ApiService {
+  async fetchIndicadores(id = 'frontend') {
+    return this.get(`/api/proxy/indicadores?id=${encodeURIComponent(id)}`);
+  }
+}
+
+class VentasService extends ApiService {
+  async fetchVentas() { return this.get('/api/proxy/ventas'); }
+}
+
+class ReportesService extends ApiService {
+  async fetchReportes(id = 'frontend') {
+    return this.get(`/api/proxy/reportes?id=${encodeURIComponent(id)}`);
+  }
+}
+
+class InventarioService extends ApiService {
+  async fetchInventario() { return this.get('/api/proxy/datos/inventario'); }
+}
+
+class EmpleadosService extends ApiService {
+  async fetchEmpleados() { return this.get('/api/proxy/datos/empleados'); }
+}
+
+class EventosService extends ApiService {
+  async fetchEventos() { return this.get('/api/proxy/datos/eventos'); }
 }
 
 // ── Creator ────────────────────────────────────────────────────────────────────
@@ -96,10 +126,18 @@ class ApiServiceFactory {
   }
 
   static REGISTRY = {
+    // Servicios agrupados (compatibilidad con código existente)
     data:      DataService,
     auth:      AuthService,
     dashboard: DashboardService,
     datos:     DatosService,
+    // Servicios individuales por dominio
+    indicadores: IndicadoresService,
+    ventas:      VentasService,
+    reportes:    ReportesService,
+    inventario:  InventarioService,
+    empleados:   EmpleadosService,
+    eventos:     EventosService,
   };
 
   static create(serviceType = 'data', environment = 'production', overrides = {}) {
@@ -116,4 +154,10 @@ class ApiServiceFactory {
   }
 }
 
-module.exports = { ApiServiceFactory, ApiService, DataService, AuthService, DashboardService, DatosService };
+module.exports = {
+  ApiServiceFactory,
+  ApiService,
+  DataService, AuthService, DashboardService, DatosService,
+  IndicadoresService, VentasService, ReportesService,
+  InventarioService, EmpleadosService, EventosService,
+};

@@ -57,15 +57,11 @@ App.Indicadores = (() => {
     localStorage.setItem(THRESHOLD_KEY, JSON.stringify(thresholds));
   }
 
-  function tokenHeader() {
-    return { Authorization: 'Bearer ' + (App.Auth.getSession()?.token || '') };
-  }
-
   async function fetchData() {
     const [ventasRes, indRes, repRes] = await Promise.allSettled([
-      fetch('/api/ventas',      { headers: tokenHeader() }).then(r => r.json()),
-      fetch('/api/indicadores', { headers: tokenHeader() }).then(r => r.json()),
-      fetch('/api/reportes',    { headers: tokenHeader() }).then(r => r.json()),
+      App.Facade.getVentas(),
+      App.Facade.getIndicadores(),
+      App.Facade.getReportes(),
     ]);
 
     const ventas = ventasRes.status === 'fulfilled' && Array.isArray(ventasRes.value)
