@@ -583,3 +583,65 @@ tbody tr:hover td { background: var(--gray-100); }
 .mt-2          { margin-top: 12px; }
 .success-msg   { color: var(--green); font-size: 12px; margin-top: 8px; }
 .error-msg     { color: var(--red); font-size: 12px; margin-top: 8px; }
+
+/* ── Indicadores — zonas y jerarquía ───────────────────────────────────────── */
+.kpi-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-muted);
+  margin: 0 0 10px 2px;
+}
+.kpi-section-ops {
+  margin-top: 28px;
+}
+
+/* Tarjetas principales más grandes (auto-fit: 3 cuando pctOnline oculto, 4 cuando visible) */
+.kpi-grid-main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 8px;
+}
+.kpi-grid-main .kpi-value {
+  font-size: 36px;
+}
+
+/* Tarjetas operacionales más compactas */
+.kpi-grid-ops {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.kpi-grid-ops .kpi-card {
+  padding: 14px 18px;
+}
+.kpi-grid-ops .kpi-value {
+  font-size: 22px;
+}
+
+/* Badge de sucursal activa */
+.sucursal-badge {
+  display: inline-block;
+  background: var(--blue-mid);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Selector de sucursal en header */
+#kpi-sucursal {
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--white);
+  cursor: pointer;
+}

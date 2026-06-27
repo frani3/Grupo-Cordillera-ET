@@ -4,35 +4,48 @@ App.Indicadores = (() => {
   const THRESHOLD_KEY = 'gc_kpi_thresholds';
 
   const DEFAULTS = {
-    ventasTotales:   500000,
-    ticketPromedio:   20000,
-    pctOnline:           20,
-    itemsInventario:     10,
-    promedioHoras:        4,
-    montoEventos:    100000,
+    ventasTotales:  5000000,
+    ticketPromedio:   50000,
+    pctPresencial:       50,
+    pctOnline:           30,
+    itemsInventario:     50,
+    promedioHoras:        5,
+    montoEventos:  3000000,
   };
 
   const KPIS = [
     {
       id:      'ventasTotales',
+      zone:    'main',
       label:   'Ventas Totales',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext: data => `${data.totalTransacciones} transacciones`,
     },
     {
       id:      'ticketPromedio',
+      zone:    'main',
       label:   'Ticket Promedio',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext: () => 'Por transacción',
     },
     {
-      id:      'pctOnline',
-      label:   'Ventas Online',
-      format:  v => v + '%',
-      subtext: data => `${data.transaccionesOnline} online / ${data.transaccionesTienda} tienda`,
+      id:         'pctPresencial',
+      zone:       'main',
+      label:      'Ventas Presenciales',
+      format:     v => v + '%',
+      subtext:    data => `${data.transaccionesTienda} transacciones en tienda`,
+    },
+    {
+      id:         'pctOnline',
+      zone:       'main',
+      globalOnly: true,   // se oculta al filtrar por sucursal
+      label:      'Ventas Online',
+      format:     v => v + '%',
+      subtext:    data => `${data.transaccionesOnline} transacciones online`,
     },
     {
       id:      'itemsInventario',
+      zone:    'ops',
       label:   'Items en Inventario',
       format:  v => v.toLocaleString('es-CL'),
       subtext: data => data.stockCritico > 0
@@ -41,15 +54,17 @@ App.Indicadores = (() => {
     },
     {
       id:      'promedioHoras',
+      zone:    'ops',
       label:   'Horas Prom. por Empleado',
       format:  v => v.toFixed(1) + ' hrs',
       subtext: data => `${data.totalEventos} registros de turno`,
     },
     {
       id:      'montoEventos',
-      label:   'Monto Eventos Financieros',
+      zone:    'ops',
+      label:   'Movimientos Financieros',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext: data => `${data.totalEventos} eventos`,
+      subtext: data => `${data.totalEventos} eventos (cierres, devoluciones, descuentos)`,
     },
   ];
 
@@ -58,12 +73,12 @@ App.Indicadores = (() => {
     'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
   ];
 
-  let thresholds    = {};
-  let currentValues = {};
-  let container     = null;
-  let configTarget  = null;
+  let thresholds     = {};
+  let currentValues  = {};
+  let container      = null;
+  let configTarget   = null;
   let refreshInterval = null;
-  let rawData       = { ventas: [], inventario: [], empleados: [], eventos: [] };
+  let rawData        = { ventas: [], inventario: [], empleados: [], eventos: [] };
   let sucursalFiltro = '';
 
   function loadThresholds() {
@@ -101,19 +116,21 @@ App.Indicadores = (() => {
     const e  = sucursal ? data.empleados.filter(r => r.sucursal === sucursal)  : data.empleados;
     const ev = sucursal ? data.eventos.filter(r => r.sucursal === sucursal)    : data.eventos;
 
-    const ventasTotales         = v.reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
-    const transaccionesOnline   = v.filter(r => r.canal === 'Online').length;
-    const transaccionesTienda   = v.filter(r => r.canal === 'Tienda Física').length;
-    const totalTransacciones    = v.length;
-    const ticketPromedio        = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
-    const itemsInventario       = i.length;
-    const stockCritico          = i.filter(r => (parseInt(r.cantidad) || 0) < 10).length;
-    const totalHoras            = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
-    const promedioHoras         = e.length > 0 ? totalHoras / e.length : 0;
-    const montoEventos          = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
-    const totalEventos          = ev.length;
-    const pctOnline             = totalTransacciones > 0
+    const ventasTotales       = v.reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
+    const transaccionesOnline = v.filter(r => r.canal === 'Online').length;
+    const transaccionesTienda = v.filter(r => r.canal === 'Tienda Física').length;
+    const totalTransacciones  = v.length;
+    const ticketPromedio      = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
+    const itemsInventario     = i.length;
+    const stockCritico        = i.filter(r => (parseInt(r.cantidad) || 0) < 10).length;
+    const totalHoras          = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
+    const promedioHoras       = e.length > 0 ? totalHoras / e.length : 0;
+    const montoEventos        = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+    const totalEventos        = ev.length;
+    const pctOnline           = totalTransacciones > 0
       ? Math.round((transaccionesOnline / totalTransacciones) * 100) : 0;
+    const pctPresencial       = totalTransacciones > 0
+      ? Math.round((transaccionesTienda / totalTransacciones) * 100) : 0;
 
     return {
       ventasTotales,
@@ -127,6 +144,7 @@ App.Indicadores = (() => {
       montoEventos,
       totalEventos,
       pctOnline,
+      pctPresencial,
     };
   }
 
@@ -140,38 +158,59 @@ App.Indicadores = (() => {
     if (id === 'ventasTotales' || id === 'ticketPromedio' || id === 'montoEventos') {
       return '$' + Math.round(v).toLocaleString('es-CL');
     }
-    if (id === 'pctOnline') return v + '%';
+    if (id === 'pctOnline' || id === 'pctPresencial') return v + '%';
     if (id === 'promedioHoras') return v + ' hrs';
     return String(v);
   }
 
+  function syncOnlineCardVisibility() {
+    const card = document.getElementById('kpi-card-pctOnline');
+    if (card) card.classList.toggle('hidden', !!sucursalFiltro);
+  }
+
+  function renderCard(k) {
+    return `
+      <div class="kpi-card" id="kpi-card-${k.id}">
+        <div class="kpi-header">
+          <span class="kpi-label">${k.label}</span>
+          <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
+        </div>
+        <div class="kpi-value" id="val-${k.id}">—</div>
+        <div class="kpi-sub" id="sub-${k.id}" style="font-size:0.78rem;color:#666;margin:2px 0 6px 0;">—</div>
+        <div class="kpi-footer">
+          <span class="kpi-threshold" id="thr-${k.id}">Umbral: ${formatThreshold(k.id)}</span>
+          ${canConfigure()
+            ? `<button class="btn-config" onclick="App.Indicadores.openConfig('${k.id}')">Configurar</button>`
+            : ''}
+        </div>
+      </div>`;
+  }
+
   function renderShell() {
+    const main = KPIS.filter(k => k.zone === 'main');
+    const ops  = KPIS.filter(k => k.zone === 'ops');
+
     container.innerHTML = `
       <div class="page-header">
-        <h2>Panel de Indicadores</h2>
-        <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
-          <option value="">Todas las sucursales</option>
-          ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
-        </select>
-        <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h2>Panel de Indicadores</h2>
+          <span id="kpi-sucursal-badge" class="sucursal-badge hidden"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
+            <option value="">Todas las sucursales</option>
+            ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+          <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
+        </div>
       </div>
-      <div class="kpi-grid" id="kpi-grid">
-        ${KPIS.map(k => `
-          <div class="kpi-card" id="kpi-card-${k.id}">
-            <div class="kpi-header">
-              <span class="kpi-label">${k.label}</span>
-              <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
-            </div>
-            <div class="kpi-value" id="val-${k.id}">—</div>
-            <div class="kpi-sub" id="sub-${k.id}" style="font-size:0.78rem;color:#666;margin:2px 0 6px 0;">—</div>
-            <div class="kpi-footer">
-              <span class="kpi-threshold" id="thr-${k.id}">Umbral: ${formatThreshold(k.id)}</span>
-              ${canConfigure()
-                ? `<button class="btn-config" onclick="App.Indicadores.openConfig('${k.id}')">Configurar</button>`
-                : ''}
-            </div>
-          </div>
-        `).join('')}
+      <div class="kpi-section-title">Métricas de Venta</div>
+      <div class="kpi-grid kpi-grid-main" id="kpi-grid-main">
+        ${main.map(renderCard).join('')}
+      </div>
+      <div class="kpi-section-title kpi-section-ops">Métricas Operacionales</div>
+      <div class="kpi-grid kpi-grid-ops" id="kpi-grid-ops">
+        ${ops.map(renderCard).join('')}
       </div>
       <div id="kpi-ts" class="small text-muted"></div>
       <!-- Overlay de configuración -->
@@ -200,7 +239,7 @@ App.Indicadores = (() => {
       const cardEl = document.getElementById(`kpi-card-${k.id}`);
       if (valEl)  valEl.textContent = k.format(val);
       if (subEl && k.subtext) subEl.textContent = k.subtext(values);
-      if (semEl)  {
+      if (semEl) {
         semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
         semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
       }
@@ -241,6 +280,16 @@ App.Indicadores = (() => {
 
     filterSucursal() {
       sucursalFiltro = document.getElementById('kpi-sucursal')?.value || '';
+      const badge = document.getElementById('kpi-sucursal-badge');
+      if (badge) {
+        if (sucursalFiltro) {
+          badge.textContent = '📍 ' + sucursalFiltro;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      syncOnlineCardVisibility();
       applyValues(computeValues(rawData, sucursalFiltro));
     },
 
