@@ -1,6 +1,7 @@
 window.App = window.App || {};
 
 App.Router = (() => {
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   const MODULES = {
     admin:     ['indicadores', 'datos', 'reportes', 'usuarios'],
     ejecutivo: ['indicadores', 'datos', 'reportes'],
@@ -58,6 +59,11 @@ App.Router = (() => {
 
     navigate(mod) {
       if (!META[mod]) return;
+      // Llamar destroy() del módulo anterior si lo tiene (ej. limpia intervalos)
+      if (current) {
+        const prev = App[capitalize(current)];
+        if (prev?.destroy) prev.destroy();
+      }
       current = mod;
 
       document.querySelectorAll('.nav-item').forEach(el =>

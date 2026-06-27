@@ -39,10 +39,11 @@ App.Indicadores = (() => {
     },
   ];
 
-  let thresholds    = {};
-  let currentValues = {};
-  let container     = null;
-  let configTarget  = null;
+  let thresholds      = {};
+  let currentValues   = {};
+  let container       = null;
+  let configTarget    = null;
+  let refreshInterval = null;
 
   function loadThresholds() {
     try {
@@ -149,6 +150,14 @@ App.Indicadores = (() => {
       loadThresholds();
       renderShell();
       await this.refresh();
+      refreshInterval = setInterval(() => App.Indicadores.refresh(), 15000);
+    },
+
+    destroy() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
     },
 
     async refresh() {
