@@ -54,7 +54,6 @@ public class OnlineVentaService {
         venta.setFecha(fechaLimpia);
         venta.setMontoTotal(dto.getMonto_total());
         venta.setMetodoPago(dto.getMetodo_pago());
-        venta.setSucursal(dto.getSucursal());
         venta.setStatus("PROCESADO_OK");
         venta.setCreatedAt(LocalDateTime.now());
 

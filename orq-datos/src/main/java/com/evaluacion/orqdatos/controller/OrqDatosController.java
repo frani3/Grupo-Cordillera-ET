@@ -108,9 +108,9 @@ public class OrqDatosController {
 
     private List<Map<String, Object>> fetchTodas() {
         CompletableFuture<List<Map<String, Object>>> f1 =
-                CompletableFuture.supplyAsync(() -> fetchMs("/api/pos/data", ms1Url, "pos"));
+                CompletableFuture.supplyAsync(() -> fetchMs("/api/pos/data", ms1Url, "Tienda Física"));
         CompletableFuture<List<Map<String, Object>>> f2 =
-                CompletableFuture.supplyAsync(() -> fetchMs("/api/online/ventas", ms2Url, "online"));
+                CompletableFuture.supplyAsync(() -> fetchMs("/api/online/ventas", ms2Url, "Online"));
         return Stream.concat(f1.join().stream(), f2.join().stream()).collect(Collectors.toList());
     }
 
@@ -121,7 +121,7 @@ public class OrqDatosController {
                     new ParameterizedTypeReference<>() {});
             List<Map<String, Object>> body = resp.getBody();
             if (body == null) return Collections.emptyList();
-            body.forEach(t -> t.putIfAbsent("canal", canal));
+            body.forEach(t -> t.put("canal", canal));
             return body;
         } catch (Exception e) {
             return Collections.emptyList();

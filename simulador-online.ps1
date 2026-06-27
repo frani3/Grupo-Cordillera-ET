@@ -4,7 +4,6 @@
 # Detener: Ctrl+C
 
 $url        = "http://localhost:8083/api/online/venta"
-$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Nunoa","Vitacura","La Florida","Quilicura","San Bernardo")
 $plataformas = @("web","app","marketplace")
 $metodos    = @("tarjeta","transferencia","paypal","mercadopago")
 $emails     = @("juan@mail.com","maria@mail.com","pedro@mail.com","ana@mail.com","luis@mail.com")
@@ -38,20 +37,19 @@ function Esperar-Servicio {
 
 function Enviar-Online {
     $script:counter++
-    $sku       = $skus | Get-Random
-    $precio    = $precios[$sku]
-    $cant      = Get-Random -Minimum 1 -Maximum 4
-    $total     = [math]::Round($precio * $cant, 2)
-    $sucursal  = $sucursales | Get-Random
+    $sku        = $skus | Get-Random
+    $precio     = $precios[$sku]
+    $cant       = Get-Random -Minimum 1 -Maximum 4
+    $total      = [math]::Round($precio * $cant, 2)
     $plataforma = $plataformas | Get-Random
-    $trx       = "TRX-ONLINE-$("{0:D4}" -f $script:counter)-$(Get-Random -Minimum 1000 -Maximum 9999)"
-    $fecha     = Get-FechaAleatoria
+    $trx        = "TRX-ONLINE-$("{0:D4}" -f $script:counter)-$(Get-Random -Minimum 1000 -Maximum 9999)"
+    $fecha      = Get-FechaAleatoria
 
-    $body = "{`"trx_id`":`"$trx`",`"sucursal`":`"$sucursal`",`"fecha_hora`":`"$fecha`",`"monto_total`":$total,`"metodo_pago`":`"$($metodos | Get-Random)`",`"canal`":`"online`",`"plataforma`":`"$plataforma`",`"email_cliente`":`"$($emails | Get-Random)`",`"direccion_envio`":`"Av. Test 123`",`"productos`":[{`"sku`":`"$sku`",`"cantidad`":$cant,`"precio_unitario`":$precio}]}"
+    $body = "{`"trx_id`":`"$trx`",`"fecha_hora`":`"$fecha`",`"monto_total`":$total,`"metodo_pago`":`"$($metodos | Get-Random)`",`"canal`":`"online`",`"plataforma`":`"$plataforma`",`"email_cliente`":`"$($emails | Get-Random)`",`"direccion_envio`":`"Av. Test 123`",`"productos`":[{`"sku`":`"$sku`",`"cantidad`":$cant,`"precio_unitario`":$precio}]}"
 
     try {
         Invoke-RestMethod -Method POST -Uri $url -ContentType "application/json" -Body $body | Out-Null
-        Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] OK  | $trx | $sucursal | $plataforma | $sku x$cant | `$$total"
+        Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] OK  | $trx | $plataforma | $sku x$cant | `$$total"
     } catch {
         Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] ERR | $trx | $($_.Exception.Message)"
     }

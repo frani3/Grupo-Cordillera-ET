@@ -82,8 +82,8 @@ function filterControls(tab) {
     if (tab === 'ventas') {
       extra = `<select id="fc-canal">
         <option value="">Canal (todos)</option>
-        <option>pos</option>
-        <option>online</option>
+        <option value="Tienda Física">Tienda Física</option>
+        <option value="Online">Online</option>
       </select>`;
     } else if (tab === 'inventario') {
       extra = `<select id="fc-categoria">
@@ -128,9 +128,17 @@ function filterControls(tab) {
     const suc   = document.getElementById('fc-sucursal')?.value || '';
     const desde = document.getElementById('fc-desde')?.value   || '';
     const hasta = document.getElementById('fc-hasta')?.value   || '';
+    const canal = activeTab === 'ventas'
+      ? (document.getElementById('fc-canal')?.value || '') : '';
 
     let result = allData.filter(r => {
-      if (suc && r.sucursal !== suc) return false;
+      // Sucursal: en ventas, los registros Online no tienen sucursal física.
+      // Solo se excluyen por sucursal si el canal seleccionado es "Tienda Física"
+      // o si el propio registro tiene sucursal (Tienda Física sin filtro de canal).
+      if (suc) {
+        const esOnlineSinSucursal = activeTab === 'ventas' && !r.sucursal;
+        if (!esOnlineSinSucursal && r.sucursal !== suc) return false;
+      }
       if (desde || hasta) {
         const d = new Date(r.fecha);
         if (desde && d < new Date(desde)) return false;
@@ -140,8 +148,7 @@ function filterControls(tab) {
     });
 
     if (activeTab === 'ventas') {
-      const c = document.getElementById('fc-canal')?.value;
-      if (c) result = result.filter(r => r.canal === c);
+      if (canal) result = result.filter(r => r.canal === canal);
     } else if (activeTab === 'inventario') {
       const cat = document.getElementById('fc-categoria')?.value || '';
       if (cat) result = result.filter(r => r.categoria === cat);

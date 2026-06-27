@@ -16,6 +16,16 @@ public class EmpleadoController {
 
     private final EmpleadoRepository repo = EmpleadoRepository.getInstance();
 
+    private LocalDate parseFecha(Object valor) {
+        try {
+            if (valor == null) return LocalDate.now();
+            String s = valor.toString();
+            return LocalDate.parse(s.contains("T") ? s.split("T")[0] : s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
+    }
+
     // POST /api/empleados/registro — Script 4 envia registros de turno
     @PostMapping("/registro")
     public ResponseEntity<RegistroEmpleado> recibirRegistro(@RequestBody Map<String, Object> payload) {
@@ -26,7 +36,7 @@ public class EmpleadoController {
                 (String) payload.getOrDefault("sucursal", "central"),
                 (String) payload.getOrDefault("turno", "manana"),
                 ((Number) payload.getOrDefault("horas_trabajadas", 0.0)).doubleValue(),
-                LocalDate.now()
+                parseFecha(payload.get("fecha"))
         );
         return ResponseEntity.ok(repo.save(r));
     }

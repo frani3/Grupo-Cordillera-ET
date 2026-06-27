@@ -17,5 +17,4 @@ public class OnlineVentaDto {
     private String plataforma;       // "web" | "app" | "marketplace"
     private String email_cliente;
     private String direccion_envio;
-    private String sucursal;
 }

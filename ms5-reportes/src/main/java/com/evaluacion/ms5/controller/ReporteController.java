@@ -16,6 +16,16 @@ public class ReporteController {
 
     private final ReporteRepository repo = ReporteRepository.getInstance();
 
+    private LocalDate parseFecha(Object valor) {
+        try {
+            if (valor == null) return LocalDate.now();
+            String s = valor.toString();
+            return LocalDate.parse(s.contains("T") ? s.split("T")[0] : s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
+    }
+
     // POST /api/reportes/evento — Script 5 envia eventos financieros
     @PostMapping("/evento")
     public ResponseEntity<EventoReporte> recibirEvento(@RequestBody Map<String, Object> payload) {
@@ -26,7 +36,7 @@ public class ReporteController {
                 (String) payload.getOrDefault("descripcion", "evento financiero"),
                 ((Number) payload.getOrDefault("monto", 0.0)).doubleValue(),
                 (String) payload.getOrDefault("sucursal", "central"),
-                LocalDate.now()
+                parseFecha(payload.get("fecha"))
         );
         return ResponseEntity.ok(repo.save(e));
     }
