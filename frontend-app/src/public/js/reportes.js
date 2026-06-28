@@ -360,8 +360,8 @@ App.Reportes = (() => {
       </div>
       <div class="report-layout">
         <div class="report-panel card">
-          <div class="card-header" style="margin:-20px -20px 16px; padding:16px 20px">
-            <div class="card-title">Parámetros</div>
+          <div class="card-header">
+            <div class="card-title">Parámetros del reporte</div>
           </div>
 
           <!-- Sucursales y Tipos en fila -->
@@ -425,7 +425,7 @@ App.Reportes = (() => {
           </div>
         </div>
       </div>
-      <div class="historial-section card" style="margin-top:0">
+      <div class="historial-section card">
         <div class="section-title">Historial de reportes generados</div>
         <div id="rp-historial"></div>
       </div>`;

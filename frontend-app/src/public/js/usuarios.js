@@ -33,7 +33,7 @@ App.Usuarios = (() => {
                   ${u.real
                     ? '<span class="text-muted small">Sistema</span>'
                     : `<button onclick="App.Usuarios.eliminar(${u.id})" class="btn btn-danger btn-sm">
-                        ${App.Icons?.trash || 'Eliminar'}
+                        ${App.Icons?.trash || ''} Eliminar
                       </button>`}
                 </td>
               </tr>`).join('')}

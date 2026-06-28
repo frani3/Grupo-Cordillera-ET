@@ -298,7 +298,7 @@ App.Indicadores = (() => {
           <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
         </div>
         <div class="kpi-value" id="val-${k.id}">—</div>
-        <div class="kpi-sub" id="sub-${k.id}" style="font-size:0.78rem;color:#666;margin:2px 0 6px 0;">—</div>
+        <div class="kpi-sub" id="sub-${k.id}">—</div>
         <div class="kpi-footer">${footer}</div>
       </div>`;
   }
