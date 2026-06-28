@@ -4,7 +4,7 @@ App.Datos = (() => {
   const PAGE_SIZE  = 20;
   const SUCURSALES = [
     'Santiago Centro', 'Providencia', 'Las Condes', 'Maipu',
-    'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
+    'Pudahuel', 'Ñuñoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
   ];
 
   const TABS = [
@@ -25,7 +25,7 @@ App.Datos = (() => {
     inventario: [
       { key: 'itemId',        label: 'ID Item',    fmt: v => v ?? '—' },
       { key: 'nombre',        label: 'Nombre',     fmt: v => v ?? '—' },
-      { key: 'categoria',     label: 'Categoría',  fmt: v => v ?? '—' },
+      { key: 'categoria',     label: 'Categoría',  fmt: v => v ? v.charAt(0).toUpperCase() + v.slice(1) : '—' },
       { key: 'cantidad',      label: 'Cantidad',   fmt: v => v ?? 0 },
       { key: 'precioUnitario',label: 'Precio',     fmt: v => '$' + parseFloat(v || 0).toLocaleString('es-CL') },
       { key: 'sucursal',      label: 'Sucursal',   fmt: v => v ?? '—' },

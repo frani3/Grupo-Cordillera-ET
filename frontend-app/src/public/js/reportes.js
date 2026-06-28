@@ -4,7 +4,7 @@ App.Reportes = (() => {
   const HISTORY_KEY = 'gc_reportes_historial';
   const SUCURSALES  = [
     'Santiago Centro','Providencia','Las Condes','Maipu',
-    'Pudahuel','Nunoa','Vitacura','La Florida','Quilicura','San Bernardo',
+    'Pudahuel','Ñuñoa','Vitacura','La Florida','Quilicura','San Bernardo',
   ];
   const TIPOS = ['cierre-diario','conciliacion','descuento','devolucion','bonificacion'];
 
@@ -364,9 +364,10 @@ App.Reportes = (() => {
             <div class="card-title">Parámetros del reporte</div>
           </div>
 
-          <!-- Sucursales y Tipos en fila -->
-          <div class="params-row">
-            <div class="form-group">
+          <div class="params-grid">
+
+            <!-- Columna 1: Sucursales -->
+            <div class="form-group" style="margin:0">
               <label>Sucursales</label>
               <div class="multi-select multi-select-dimmed" id="rp-sucursales">
                 <label class="multi-select-item multi-select-all">
@@ -383,8 +384,10 @@ App.Reportes = (() => {
                   </label>`).join('')}
               </div>
             </div>
-            <div class="form-group">
-              <label>Tipos de Evento</label>
+
+            <!-- Columna 2: Tipos de evento -->
+            <div class="form-group" style="margin:0">
+              <label>Tipos de evento</label>
               <div class="multi-select multi-select-dimmed" id="rp-tipos">
                 <label class="multi-select-item multi-select-all">
                   <input type="checkbox" id="rp-tipo-todos" value=""
@@ -400,23 +403,23 @@ App.Reportes = (() => {
                   </label>`).join('')}
               </div>
             </div>
-          </div>
 
-          <!-- Fechas en fila -->
-          <div class="params-dates">
-            <div class="form-group">
-              <label>Fecha Desde</label>
-              <input type="date" id="rp-desde">
+            <!-- Columna 3: Fechas + Botón -->
+            <div class="params-dates-col">
+              <div class="form-group" style="margin:0">
+                <label>Fecha desde</label>
+                <input type="date" id="rp-desde">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label>Fecha hasta</label>
+                <input type="date" id="rp-hasta">
+              </div>
+              <button onclick="App.Reportes.generar()" class="btn btn-primary btn-full">
+                ${App.Icons?.chart || ''} Generar
+              </button>
             </div>
-            <div class="form-group">
-              <label>Fecha Hasta</label>
-              <input type="date" id="rp-hasta">
-            </div>
-          </div>
 
-          <button onclick="App.Reportes.generar()" class="btn btn-primary btn-full">
-            ${App.Icons?.chart || ''} Generar Reporte
-          </button>
+          </div>
         </div>
         <div class="report-results" id="rp-results">
           <div class="empty-state">

@@ -4,7 +4,7 @@
 # Detener: Ctrl+C
 
 $endpoint   = "http://localhost:8084/api/inventario/item"
-$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Nunoa","Vitacura","La Florida","Quilicura","San Bernardo")
+$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Ñuñoa","Vitacura","La Florida","Quilicura","San Bernardo")
 $categorias = @("electronica","ropa","alimentos","hogar","deportes")
 $counter    = 0
 

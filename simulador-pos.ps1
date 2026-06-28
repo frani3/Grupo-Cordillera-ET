@@ -4,7 +4,7 @@
 # Detener: Ctrl+C
 
 $url       = "http://localhost:8081/api/pos/simulate-mq"
-$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Nunoa","Vitacura","La Florida","Quilicura","San Bernardo")
+$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Ñuñoa","Vitacura","La Florida","Quilicura","San Bernardo")
 $cajas     = @("CAJA-01","CAJA-02","CAJA-03","CAJA-04","CAJA-05")
 $metodos   = @("DEBITO","CREDITO","EFECTIVO","TRANSFERENCIA")
 $vendedores = @("VND-01","VND-02","VND-03","VND-04","VND-05","VND-07")

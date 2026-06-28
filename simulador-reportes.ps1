@@ -4,7 +4,7 @@
 # Detener: Ctrl+C
 
 $endpoint   = "http://localhost:8086/api/reportes/evento"
-$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Nunoa","Vitacura","La Florida","Quilicura","San Bernardo")
+$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Ñuñoa","Vitacura","La Florida","Quilicura","San Bernardo")
 $tipos      = @("cierre-diario","conciliacion","descuento","devolucion","bonificacion")
 $counter    = 0
 

@@ -110,7 +110,7 @@ App.Indicadores = (() => {
 
   const SUCURSALES = [
     'Santiago Centro', 'Providencia', 'Las Condes', 'Maipu',
-    'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
+    'Pudahuel', 'Ñuñoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
   ];
 
   let thresholds       = {};

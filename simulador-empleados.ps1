@@ -4,7 +4,7 @@
 # Detener: Ctrl+C
 
 $endpoint   = "http://localhost:8085/api/empleados/registro"
-$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Nunoa","Vitacura","La Florida","Quilicura","San Bernardo")
+$sucursales = @("Santiago Centro","Providencia","Las Condes","Maipu","Pudahuel","Ñuñoa","Vitacura","La Florida","Quilicura","San Bernardo")
 $nombres    = @("Maria Lopez","Carlos Ruiz","Ana Torres","Pedro Diaz","Sofia Vargas","Diego Reyes","Valentina Mora","Felipe Castro","Camila Nunez","Andres Soto")
 $turnos     = @("manana","tarde","noche")
 $counter    = 0
