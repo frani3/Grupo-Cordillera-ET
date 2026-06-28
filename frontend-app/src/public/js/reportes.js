@@ -10,6 +10,7 @@ App.Reportes = (() => {
 
   let container  = null;
   let lastResult = null; // { params, rawFiltrado, kpis }
+  let _updating  = false;
 
   // ── Lectura de controles ─────────────────────────────────────────────────
   function getSelectedSucursales() {
@@ -361,48 +362,57 @@ App.Reportes = (() => {
       <div class="report-layout">
         <div class="report-panel">
           <h3>Parámetros</h3>
-          <div class="form-group">
-            <label>Sucursales</label>
-            <div class="multi-select" id="rp-sucursales">
-              <label class="multi-select-item multi-select-all">
-                <input type="checkbox" id="rp-suc-todas" value=""
-                  onchange="App.Reportes.toggleTodas(this)" checked>
-                <span>Todas las sucursales</span>
-              </label>
-              <div class="multi-select-divider"></div>
-              ${SUCURSALES.map(s => `
-                <label class="multi-select-item">
-                  <input type="checkbox" class="rp-suc-cb" value="${s}"
-                    onchange="App.Reportes.onSucursalChange()" disabled>
-                  <span>${s}</span>
-                </label>`).join('')}
+
+          <!-- Sucursales y Tipos en fila -->
+          <div class="params-row">
+            <div class="form-group">
+              <label>Sucursales</label>
+              <div class="multi-select" id="rp-sucursales">
+                <label class="multi-select-item multi-select-all">
+                  <input type="checkbox" id="rp-suc-todas" value=""
+                    onchange="App.Reportes.toggleTodas(this)" checked>
+                  <span>Todas las sucursales</span>
+                </label>
+                <div class="multi-select-divider"></div>
+                ${SUCURSALES.map(s => `
+                  <label class="multi-select-item">
+                    <input type="checkbox" class="rp-suc-cb" value="${s}"
+                      onchange="App.Reportes.onSucursalChange()" disabled>
+                    <span>${s}</span>
+                  </label>`).join('')}
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tipos de Evento</label>
+              <div class="multi-select" id="rp-tipos">
+                <label class="multi-select-item multi-select-all">
+                  <input type="checkbox" id="rp-tipo-todos" value=""
+                    onchange="App.Reportes.toggleTodosTipos(this)" checked>
+                  <span>Todos los tipos</span>
+                </label>
+                <div class="multi-select-divider"></div>
+                ${TIPOS.map(t => `
+                  <label class="multi-select-item">
+                    <input type="checkbox" class="rp-tipo-cb" value="${t}"
+                      onchange="App.Reportes.onTipoChange()" disabled>
+                    <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
+                  </label>`).join('')}
+              </div>
             </div>
           </div>
-          <div class="form-group">
-            <label>Tipos de Evento</label>
-            <div class="multi-select" id="rp-tipos">
-              <label class="multi-select-item multi-select-all">
-                <input type="checkbox" id="rp-tipo-todos" value=""
-                  onchange="App.Reportes.toggleTodosTipos(this)" checked>
-                <span>Todos los tipos</span>
-              </label>
-              <div class="multi-select-divider"></div>
-              ${TIPOS.map(t => `
-                <label class="multi-select-item">
-                  <input type="checkbox" class="rp-tipo-cb" value="${t}"
-                    onchange="App.Reportes.onTipoChange()" disabled>
-                  <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
-                </label>`).join('')}
+
+          <!-- Fechas en fila -->
+          <div class="params-row">
+            <div class="form-group">
+              <label>Fecha Desde</label>
+              <input type="date" id="rp-desde">
+            </div>
+            <div class="form-group">
+              <label>Fecha Hasta</label>
+              <input type="date" id="rp-hasta">
             </div>
           </div>
-          <div class="form-group">
-            <label>Fecha Desde</label>
-            <input type="date" id="rp-desde">
-          </div>
-          <div class="form-group">
-            <label>Fecha Hasta</label>
-            <input type="date" id="rp-hasta">
-          </div>
+
           <button onclick="App.Reportes.generar()" class="btn btn-primary">
             Generar Reporte
           </button>
@@ -477,33 +487,53 @@ App.Reportes = (() => {
     exportar() { exportar(); },
 
     toggleTodas(checkbox) {
+      if (_updating) return;
+      _updating = true;
       const cbs = document.querySelectorAll('.rp-suc-cb');
       if (checkbox.checked) {
         cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
       } else {
         cbs.forEach(cb => { cb.disabled = false; });
       }
+      _updating = false;
     },
 
     onSucursalChange() {
-      const cbs   = document.querySelectorAll('.rp-suc-cb:checked');
-      const todas = document.getElementById('rp-suc-todas');
-      if (todas) todas.checked = cbs.length === 0;
+      if (_updating) return;
+      _updating = true;
+      const marcados = document.querySelectorAll('.rp-suc-cb:checked').length;
+      const todas    = document.getElementById('rp-suc-todas');
+      if (marcados === 0 && todas) {
+        todas.checked = true;
+        document.querySelectorAll('.rp-suc-cb')
+          .forEach(cb => { cb.disabled = true; });
+      }
+      _updating = false;
     },
 
     toggleTodosTipos(checkbox) {
+      if (_updating) return;
+      _updating = true;
       const cbs = document.querySelectorAll('.rp-tipo-cb');
       if (checkbox.checked) {
         cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
       } else {
         cbs.forEach(cb => { cb.disabled = false; });
       }
+      _updating = false;
     },
 
     onTipoChange() {
-      const cbs   = document.querySelectorAll('.rp-tipo-cb:checked');
-      const todos = document.getElementById('rp-tipo-todos');
-      if (todos) todos.checked = cbs.length === 0;
+      if (_updating) return;
+      _updating = true;
+      const marcados = document.querySelectorAll('.rp-tipo-cb:checked').length;
+      const todos    = document.getElementById('rp-tipo-todos');
+      if (marcados === 0 && todos) {
+        todos.checked = true;
+        document.querySelectorAll('.rp-tipo-cb')
+          .forEach(cb => { cb.disabled = true; });
+      }
+      _updating = false;
     },
 
     regenerar(id) {
