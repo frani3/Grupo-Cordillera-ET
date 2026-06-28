@@ -1,12 +1,14 @@
 window.App = window.App || {};
 
 App.Indicadores = (() => {
-  const THRESHOLD_KEY = 'gc_kpi_thresholds';
+  const THRESHOLD_KEY     = 'gc_kpi_thresholds';
+  const THRESHOLD_LOG_KEY = 'gc_kpi_threshold_log';
 
   const DEFAULTS = {
     ventasTotales:    5000000,
     ventasPresencial: 2500000,
     ventasOnline:     2500000,
+    ticketPromedio:     50000,
     itemsInventario:       50,
     promedioHoras:          5,
     montoEventos:     3000000,
@@ -61,6 +63,14 @@ App.Indicadores = (() => {
       subtext:      data => data.rankingTotal
         ? `de ${data.rankingTotal} sucursales · ${data.rankingPct}% superior`
         : 'Sin datos para comparar',
+    },
+    {
+      id:           'ticketPromedio',
+      zone:         'main',
+      sucursalOnly: true,
+      label:        'Ticket Promedio',
+      format:       v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext:      () => 'Valor promedio por transacción en esta sucursal',
     },
 
     // ── Zona ops ───────────────────────────────────────────────────────────
@@ -163,6 +173,7 @@ App.Indicadores = (() => {
     const promedioHoras       = totalEmpleados > 0 ? totalHoras / totalEmpleados : 0;
     const montoEventos        = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
     const totalEventos        = ev.length;
+    const ticketPromedio      = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
 
     // Ranking de sucursales (siempre sobre el dataset completo, no filtrado)
     const ventasPorSucursal = {};
@@ -194,6 +205,7 @@ App.Indicadores = (() => {
       transaccionesTienda,
       ventasPresencial,
       ventasOnline,
+      ticketPromedio,
       sucursalLider,
       sucursalLiderMonto,
       rankingSucursal,
@@ -213,9 +225,9 @@ App.Indicadores = (() => {
     return role === 'analista' || role === 'admin';
   }
 
-  function formatThreshold(id) {
-    const v = thresholds[id] ?? 0;
-    if (['ventasTotales','ventasPresencial','ventasOnline','montoEventos'].includes(id)) {
+  function formatThreshold(id, valorOverride) {
+    const v = valorOverride ?? thresholds[id] ?? 0;
+    if (['ventasTotales','ventasPresencial','ventasOnline','montoEventos','ticketPromedio'].includes(id)) {
       return '$' + Math.round(v).toLocaleString('es-CL');
     }
     if (id === 'promedioHoras') return v + ' hrs';
@@ -285,6 +297,15 @@ App.Indicadores = (() => {
         ${ops.map(renderCard).join('')}
       </div>
       <div id="kpi-ts" class="small text-muted"></div>
+      <div class="threshold-log-section">
+        <div class="threshold-log-header">
+          <span class="kpi-section-title" style="margin:0;">Registro de cambios de umbrales</span>
+          ${canConfigure()
+            ? `<button onclick="App.Indicadores.clearLog()" class="btn-log-clear">Limpiar historial</button>`
+            : ''}
+        </div>
+        <div id="threshold-log-container"></div>
+      </div>
       <!-- Overlay de configuración -->
       <div id="config-overlay" class="config-overlay hidden" onclick="if(event.target===this)App.Indicadores.closeConfig()">
         <div class="config-box">
@@ -299,6 +320,69 @@ App.Indicadores = (() => {
         </div>
       </div>
     `;
+  }
+
+  function logThresholdChange(kpiId, valorAntes, valorDespues) {
+    try {
+      const kpi     = KPIS.find(k => k.id === kpiId);
+      const session = App.Auth.getSession() || {};
+      const entrada = {
+        timestamp:    new Date().toISOString(),
+        usuario:      session.username || 'desconocido',
+        rol:          session.role     || '—',
+        kpiLabel:     kpi?.label || kpiId,
+        contexto:     sucursalFiltro || 'Global',
+        valorAntes,
+        valorDespues,
+      };
+      const log = JSON.parse(localStorage.getItem(THRESHOLD_LOG_KEY) || '[]');
+      log.unshift(entrada);
+      if (log.length > 50) log.splice(50);
+      localStorage.setItem(THRESHOLD_LOG_KEY, JSON.stringify(log));
+    } catch { /* silent */ }
+  }
+
+  function renderLog() {
+    const el = document.getElementById('threshold-log-container');
+    if (!el) return;
+    try {
+      const log = JSON.parse(localStorage.getItem(THRESHOLD_LOG_KEY) || '[]');
+      if (log.length === 0) {
+        el.innerHTML = '<p class="log-empty">Sin cambios registrados aún.</p>';
+        return;
+      }
+      el.innerHTML = `
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>KPI</th>
+              <th>Contexto</th>
+              <th>Valor anterior</th>
+              <th>Valor nuevo</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${log.map(e => {
+              const kpiId = KPIS.find(k => k.label === e.kpiLabel)?.id || '';
+              return `
+                <tr>
+                  <td>${new Date(e.timestamp).toLocaleString('es-CL')}</td>
+                  <td>${e.usuario}</td>
+                  <td><span class="role-badge role-${e.rol}">${e.rol}</span></td>
+                  <td>${e.kpiLabel}</td>
+                  <td>${e.contexto}</td>
+                  <td class="log-val-antes">${formatThreshold(kpiId, e.valorAntes)}</td>
+                  <td class="log-val-despues">${formatThreshold(kpiId, e.valorDespues)}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    } catch {
+      el.innerHTML = '<p class="log-empty">Error al cargar el historial.</p>';
+    }
   }
 
   function applyValues(values) {
@@ -339,6 +423,7 @@ App.Indicadores = (() => {
       loadThresholds();
       renderShell();
       await this.refresh();
+      renderLog();
       refreshInterval = setInterval(() => App.Indicadores.refresh(), 15000);
     },
 
@@ -415,6 +500,13 @@ App.Indicadores = (() => {
       configTarget = null;
     },
 
+    clearLog() {
+      if (!canConfigure()) return;
+      if (!confirm('¿Eliminar todo el historial de cambios?')) return;
+      localStorage.removeItem(THRESHOLD_LOG_KEY);
+      renderLog();
+    },
+
     saveConfig() {
       if (!configTarget) return;
       const raw = document.getElementById('config-input').value;
@@ -423,6 +515,8 @@ App.Indicadores = (() => {
         alert('Ingrese un número válido (≥ 0).');
         return;
       }
+      const valorAntes = thresholds[configTarget] ?? DEFAULTS[configTarget] ?? 0;
+      logThresholdChange(configTarget, valorAntes, val);
       thresholds[configTarget] = val;
       saveThresholds();
 
@@ -431,6 +525,7 @@ App.Indicadores = (() => {
 
       applyValues(currentValues);
       this.closeConfig();
+      renderLog();
     },
   };
 })();

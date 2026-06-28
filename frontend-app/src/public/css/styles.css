@@ -725,3 +725,60 @@ tbody tr:hover td { background: var(--gray-100); }
   border-color: var(--blue-mid);
   box-shadow: 0 0 0 2px rgba(37,99,168,.12);
 }
+
+/* ── Historial de cambios de umbrales ───────────────────────────────────────── */
+.threshold-log-section {
+  margin-top: 32px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+.threshold-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.btn-log-clear {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--red);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--red);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-log-clear:hover { background: var(--red-light); }
+.log-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+.log-table th {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+.log-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--text);
+}
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tr:hover td { background: var(--gray-100); }
+.log-val-antes   { color: var(--text-muted); text-decoration: line-through; }
+.log-val-despues { color: var(--blue-mid); font-weight: 600; }
+.log-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
