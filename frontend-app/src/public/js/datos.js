@@ -125,7 +125,7 @@ function filterControls(tab) {
         <button onclick="App.Datos.clearFilters()" class="btn btn-secondary btn-sm">Limpiar</button>
       </div>
       <div class="filter-search-row">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">${App.Icons?.datos || ''}</span>
         <input
           type="text"
           id="datos-search"

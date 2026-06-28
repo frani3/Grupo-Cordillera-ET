@@ -86,8 +86,8 @@ App.Indicadores = (() => {
       label:   'Productos en Stock',
       format:  v => v.toLocaleString('es-CL'),
       subtext: data => data.stockCritico > 0
-        ? `⚠ ${data.stockCritico} productos con stock crítico (menos de 10 unidades)`
-        : '✓ Todos los productos sobre stock mínimo',
+        ? `${data.stockCritico} productos con stock crítico (menos de 10 unidades)`
+        : 'Sin stock crítico',
       tooltip: 'Cantidad de ítems registrados en inventario para esta vista. Stock crítico = ítems con menos de 10 unidades. Datos de MS3-Inventario.',
     },
     {
@@ -322,7 +322,7 @@ App.Indicadores = (() => {
         <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
       </div>
       <div id="kpi-banner" class="kpi-banner kpi-banner-total">
-        <span id="kpi-banner-text">📊 Vista consolidada — todas las sucursales</span>
+        <span id="kpi-banner-text">Vista consolidada — todas las sucursales</span>
       </div>
       <div class="kpi-section-title">Métricas de Venta</div>
       <div class="kpi-grid kpi-grid-main" id="kpi-grid-main">
@@ -521,10 +521,10 @@ App.Indicadores = (() => {
       if (banner && bannerText) {
         if (sucursalFiltro) {
           banner.className       = 'kpi-banner kpi-banner-sucursal';
-          bannerText.textContent = '📍 Sucursal: ' + sucursalFiltro;
+          bannerText.textContent = 'Sucursal: ' + sucursalFiltro;
         } else {
           banner.className       = 'kpi-banner kpi-banner-total';
-          bannerText.textContent = '📊 Vista consolidada — todas las sucursales';
+          bannerText.textContent = 'Vista consolidada — todas las sucursales';
         }
       }
 

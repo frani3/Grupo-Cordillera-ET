@@ -9,18 +9,19 @@ App.Router = (() => {
   };
 
   const META = {
-    indicadores: { label: 'Indicadores',        icon: '📊', init: c => App.Indicadores.init(c) },
-    datos:       { label: 'Datos',              icon: '📋', init: c => App.Datos.init(c) },
-    reportes:    { label: 'Reportes',           icon: '📄', init: c => App.Reportes.init(c) },
-    usuarios:    { label: 'Gestión Usuarios',   icon: '👤', init: c => App.Usuarios.init(c) },
+    indicadores: { label: 'Indicadores',      icon: App.Icons.indicadores, init: c => App.Indicadores.init(c) },
+    datos:       { label: 'Datos',            icon: App.Icons.datos,       init: c => App.Datos.init(c) },
+    reportes:    { label: 'Reportes',         icon: App.Icons.reportes,    init: c => App.Reportes.init(c) },
+    usuarios:    { label: 'Gestión Usuarios', icon: App.Icons.usuarios,    init: c => App.Usuarios.init(c) },
   };
 
   let current = null;
 
   return {
     init() {
-      document.getElementById('logout-btn')
-        .addEventListener('click', () => { App.Auth.clearSession(); this.showLogin(); });
+      const logoutBtn = document.getElementById('logout-btn');
+      logoutBtn.innerHTML = App.Icons.logout + ' Cerrar sesión';
+      logoutBtn.addEventListener('click', () => { App.Auth.clearSession(); this.showLogin(); });
       document.getElementById('login-form')
         .addEventListener('submit', e => App.Auth.handleLogin(e));
 

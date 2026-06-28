@@ -171,12 +171,12 @@ App.Reportes = (() => {
           + parseFloat(r.montoTotal || 0);
       });
       const top = Object.entries(porSucursal)
-        .sort((a, b) => b[1] - a[1]).slice(0, 5);
+        .sort((a, b) => b[1] - a[1]);
       if (top.length > 0) {
         const max = top[0][1];
         topSucursalesHtml = `
           <div class="report-section">
-            <h4 class="report-section-title">🏆 Top Sucursales por Ventas</h4>
+            <h4 class="report-section-title">Top Sucursales por Ventas</h4>
             <div class="ranking-list">
               ${top.map(([suc, monto], i) => `
                 <div class="ranking-item">
@@ -209,13 +209,13 @@ App.Reportes = (() => {
             </small>
           </div>
           <button onclick="App.Reportes.exportar()" class="btn btn-success btn-sm">
-            ⬇ Exportar CSV
+            ${App.Icons?.download || ''} Exportar CSV
           </button>
         </div>
 
         <!-- KPIs del período -->
         <div class="report-section">
-          <h4 class="report-section-title">📊 KPIs del Período</h4>
+          <h4 class="report-section-title">KPIs del Período</h4>
           <div class="report-kpi-grid">
             <div class="report-kpi">
               <span class="report-kpi-label">Ventas Totales</span>
@@ -245,8 +245,8 @@ App.Reportes = (() => {
               <span class="report-kpi-value">${kpis.itemsInventario}</span>
               <span class="report-kpi-sub ${kpis.stockCritico > 0 ? 'text-red' : 'text-green'}">
                 ${kpis.stockCritico > 0
-                  ? `⚠ ${kpis.stockCritico} críticos`
-                  : '✓ Sin stock crítico'}
+                  ? `${kpis.stockCritico} críticos`
+                  : 'Sin stock crítico'}
               </span>
             </div>
             <div class="report-kpi">
@@ -265,7 +265,7 @@ App.Reportes = (() => {
         <!-- Desglose ventas por canal -->
         ${Object.keys(ventasPorCanal).length > 0 ? `
           <div class="report-section">
-            <h4 class="report-section-title">🛒 Ventas por Canal</h4>
+            <h4 class="report-section-title">Ventas por Canal</h4>
             <div class="table-scroll">
               <table>
                 <thead><tr>
@@ -289,7 +289,7 @@ App.Reportes = (() => {
         <!-- Desglose eventos por tipo -->
         ${Object.keys(eventosPorTipo).length > 0 ? `
           <div class="report-section">
-            <h4 class="report-section-title">📋 Eventos Financieros por Tipo</h4>
+            <h4 class="report-section-title">Eventos Financieros por Tipo</h4>
             <div class="table-scroll">
               <table>
                 <thead><tr><th>Tipo</th><th>Cantidad</th><th>Monto</th></tr></thead>
@@ -342,7 +342,7 @@ App.Reportes = (() => {
               <td>${fmt(r.montoEventos)}</td>
               <td>
                 <button onclick="App.Reportes.regenerar(${r.id})"
-                  class="btn-regener" title="Re-generar con estos filtros">↺</button>
+                  class="btn-regener" title="Re-generar con estos filtros">${App.Icons?.regen || ''}</button>
               </td>
             </tr>`).join('')}
           </tbody>
