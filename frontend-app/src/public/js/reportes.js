@@ -493,7 +493,8 @@ App.Reportes = (() => {
     toggleTodas(checkbox) {
       const cont = document.getElementById('rp-sucursales');
       if (checkbox.checked) {
-        document.querySelectorAll('.rp-suc-cb').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.rp-suc-cb')
+          .forEach(cb => { cb.checked = false; });
         cont?.classList.add('multi-select-dimmed');
       } else {
         cont?.classList.remove('multi-select-dimmed');
@@ -504,11 +505,11 @@ App.Reportes = (() => {
       const marcados = document.querySelectorAll('.rp-suc-cb:checked').length;
       const todas    = document.getElementById('rp-suc-todas');
       const cont     = document.getElementById('rp-sucursales');
-      if (marcados > 0 && todas) {
-        todas.checked = false;
+      if (marcados > 0) {
+        if (todas) todas.checked = false;
         cont?.classList.remove('multi-select-dimmed');
-      } else if (marcados === 0 && todas) {
-        todas.checked = true;
+      } else {
+        if (todas) todas.checked = true;
         cont?.classList.add('multi-select-dimmed');
       }
     },
@@ -516,7 +517,8 @@ App.Reportes = (() => {
     toggleTodosTipos(checkbox) {
       const cont = document.getElementById('rp-tipos');
       if (checkbox.checked) {
-        document.querySelectorAll('.rp-tipo-cb').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.rp-tipo-cb')
+          .forEach(cb => { cb.checked = false; });
         cont?.classList.add('multi-select-dimmed');
       } else {
         cont?.classList.remove('multi-select-dimmed');
@@ -527,11 +529,11 @@ App.Reportes = (() => {
       const marcados = document.querySelectorAll('.rp-tipo-cb:checked').length;
       const todos    = document.getElementById('rp-tipo-todos');
       const cont     = document.getElementById('rp-tipos');
-      if (marcados > 0 && todos) {
-        todos.checked = false;
+      if (marcados > 0) {
+        if (todos) todos.checked = false;
         cont?.classList.remove('multi-select-dimmed');
-      } else if (marcados === 0 && todos) {
-        todos.checked = true;
+      } else {
+        if (todos) todos.checked = true;
         cont?.classList.add('multi-select-dimmed');
       }
     },
