@@ -388,7 +388,10 @@ App.Indicadores = (() => {
           </thead>
           <tbody>
             ${log.map(e => {
-              const kpiId = KPIS.find(k => k.label === e.kpiLabel)?.id || '';
+              const kpiId = (
+                KPIS.find(k => k.label === e.kpiLabel) ||
+                KPIS.find(k => k.labelSucursal === e.kpiLabel)
+              )?.id || '';
               return `
                 <tr>
                   <td>${new Date(e.timestamp).toLocaleString('es-CL')}</td>
@@ -506,9 +509,7 @@ App.Indicadores = (() => {
           try {
             const all      = JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
             const globalVal = (all['global'] || {})[kpiId] ?? DEFAULTS[kpiId] ?? 0;
-            refEl.textContent = `Referencia global: ${formatThreshold.call(
-              null, kpiId, globalVal
-            )} (umbral para todas las sucursales)`;
+            refEl.textContent = `Referencia global: ${formatThreshold(kpiId, globalVal)} (umbral para todas las sucursales)`;
           } catch { refEl.textContent = ''; }
         } else {
           refEl.textContent = '';
