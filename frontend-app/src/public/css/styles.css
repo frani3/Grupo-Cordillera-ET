@@ -311,16 +311,32 @@ table { border-collapse: collapse; width: 100%; }
 .kpi-threshold { font-size: 11px; color: var(--text-muted); }
 
 /* Semáforo */
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0   rgba(39,174,96,.6); }
+  70%  { box-shadow: 0 0 0 8px rgba(39,174,96,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(39,174,96,0);  }
+}
+@keyframes pulse-red {
+  0%   { box-shadow: 0 0 0 0   rgba(231,76,60,.6); }
+  70%  { box-shadow: 0 0 0 8px rgba(231,76,60,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(231,76,60,0);  }
+}
+@keyframes pulse-info {
+  0%   { box-shadow: 0 0 0 0   rgba(59,130,246,.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(59,130,246,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(59,130,246,0);  }
+}
 .semaphore {
   width: 12px; height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
   margin-top: 2px;
+  transition: background .3s ease, box-shadow .3s ease;
 }
-.semaphore-loading { background: var(--gray-300); }
-.semaphore-green   { background: var(--green);      box-shadow: 0 0 0 3px var(--green-light); }
-.semaphore-red     { background: var(--red);         box-shadow: 0 0 0 3px var(--red-light);   }
-.semaphore-info    { background: var(--blue-light);  box-shadow: 0 0 0 3px #dbeafe; }
+.semaphore-loading { background: var(--gray-300); animation: none; }
+.semaphore-green   { background: var(--green);     animation: pulse-green 2s   ease-in-out infinite; }
+.semaphore-red     { background: var(--red);        animation: pulse-red   1.5s ease-in-out infinite; }
+.semaphore-info    { background: var(--blue-light); animation: pulse-info  3s   ease-in-out infinite; }
 
 .btn-config {
   padding: 3px 8px;
@@ -946,4 +962,60 @@ tbody tr:hover td { background: var(--gray-100); }
 }
 .multi-select-dimmed .multi-select-item:not(.multi-select-all) {
   opacity: 0.4;
+}
+
+/* ── Flash de actualización ─────────────────────────────────────────────── */
+@keyframes flash-update {
+  0%   { opacity: 1;   }
+  25%  { opacity: 0.4; }
+  50%  { opacity: 1;   }
+  75%  { opacity: 0.7; }
+  100% { opacity: 1;   }
+}
+.kpi-ts-flash {
+  animation: flash-update .8s ease;
+  color: var(--blue-mid) !important;
+  font-weight: 600;
+}
+.banner-flash {
+  animation: flash-update .6s ease;
+}
+
+/* ── Tooltip flotante del KPI ───────────────────────────────────────────── */
+.kpi-tooltip {
+  position: absolute;
+  z-index: 200;
+  background: var(--blue-dark);
+  color: var(--white);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  max-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  pointer-events: none;
+}
+.kpi-tooltip.hidden { display: none; }
+
+/* ── Ícono de ayuda en KPI ──────────────────────────────────────────────── */
+.kpi-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: help;
+  margin-left: 4px;
+  flex-shrink: 0;
+  transition: background .15s;
+  vertical-align: middle;
+}
+.kpi-help:hover {
+  background: var(--blue-mid);
+  color: var(--white);
 }

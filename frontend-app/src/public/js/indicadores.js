@@ -25,6 +25,7 @@ App.Indicadores = (() => {
       subtext:       (data, sucursal) => sucursal
         ? `${data.totalTransacciones} transacciones en esta sucursal`
         : `${data.totalTransacciones} transacciones totales`,
+      tooltip: 'Suma de todas las ventas del período (tienda física + online). Datos obtenidos de MS1-POS y MS2-Online.',
     },
     {
       id:         'ventasPresencial',
@@ -33,6 +34,7 @@ App.Indicadores = (() => {
       label:      'Ventas Presenciales',
       format:     v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext:    data => `${data.transaccionesTienda} transacciones en tienda`,
+      tooltip: 'Monto total de ventas realizadas en tienda física. Incluye todas las sucursales con canal Tienda Física.',
     },
     {
       id:         'ventasOnline',
@@ -41,6 +43,7 @@ App.Indicadores = (() => {
       label:      'Ventas Online',
       format:     v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext:    data => `${data.transaccionesOnline} transacciones online`,
+      tooltip: 'Monto total de ventas realizadas por canales digitales (web, app, marketplace). Sin asociación a sucursal física.',
     },
     {
       id:          'sucursalLider',
@@ -52,6 +55,7 @@ App.Indicadores = (() => {
       subtext:     data => data.sucursalLiderMonto
         ? '$' + Math.round(data.sucursalLiderMonto).toLocaleString('es-CL') + ' en ventas'
         : 'Sin datos suficientes',
+      tooltip: 'Sucursal con mayor volumen de ventas en el período actual. Se calcula comparando el monto total de cada sucursal.',
     },
     {
       id:           'rankingSucursal',
@@ -63,6 +67,7 @@ App.Indicadores = (() => {
       subtext:      data => data.rankingTotal
         ? `de ${data.rankingTotal} sucursales · ${data.rankingPct}% superior`
         : 'Sin datos para comparar',
+      tooltip: 'Posición de esta sucursal respecto a las demás en ventas totales. #1 es la de mayor volumen.',
     },
     {
       id:           'ticketPromedio',
@@ -71,6 +76,7 @@ App.Indicadores = (() => {
       label:        'Ticket Promedio',
       format:       v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext:      () => 'Valor promedio por transacción en esta sucursal',
+      tooltip: 'Valor promedio por transacción en esta sucursal. Se calcula dividiendo ventas totales / número de transacciones.',
     },
 
     // ── Zona ops ───────────────────────────────────────────────────────────
@@ -82,6 +88,7 @@ App.Indicadores = (() => {
       subtext: data => data.stockCritico > 0
         ? `⚠ ${data.stockCritico} productos con stock crítico (menos de 10 unidades)`
         : '✓ Todos los productos sobre stock mínimo',
+      tooltip: 'Cantidad de ítems registrados en inventario para esta vista. Stock crítico = ítems con menos de 10 unidades. Datos de MS3-Inventario.',
     },
     {
       id:      'promedioHoras',
@@ -89,6 +96,7 @@ App.Indicadores = (() => {
       label:   'Horas Trabajadas Prom.',
       format:  v => v.toFixed(1) + ' hrs',
       subtext: data => `Promedio por empleado — ${data.totalEmpleados} registros de turno`,
+      tooltip: 'Promedio de horas trabajadas por empleado en el período. Se calcula sobre los registros de turno de MS4-Empleados.',
     },
     {
       id:      'montoEventos',
@@ -96,6 +104,7 @@ App.Indicadores = (() => {
       label:   'Ajustes Financieros',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext: data => `${data.totalEventos} movimientos — cierres, devoluciones y descuentos`,
+      tooltip: 'Monto total de ajustes financieros: cierres de caja, conciliaciones, descuentos, devoluciones y bonificaciones. Datos de MS5-Reportes.',
     },
   ];
 
@@ -104,13 +113,14 @@ App.Indicadores = (() => {
     'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
   ];
 
-  let thresholds      = {};
-  let currentValues   = {};
-  let container       = null;
-  let configTarget    = null;
-  let refreshInterval = null;
-  let rawData         = { ventas: [], inventario: [], empleados: [], eventos: [] };
-  let sucursalFiltro  = '';
+  let thresholds       = {};
+  let currentValues    = {};
+  let container        = null;
+  let configTarget     = null;
+  let refreshInterval  = null;
+  let rawData          = { ventas: [], inventario: [], empleados: [], eventos: [] };
+  let sucursalFiltro   = '';
+  let _docClickHandler = null;
 
   function getContextKey() {
     return sucursalFiltro || 'global';
@@ -225,6 +235,10 @@ App.Indicadores = (() => {
     return role === 'analista' || role === 'admin';
   }
 
+  function canAdmin() {
+    return App.Auth.getSession()?.role === 'admin';
+  }
+
   function formatThreshold(id, valorOverride) {
     const v = valorOverride ?? thresholds[id] ?? 0;
     if (['ventasTotales','ventasPresencial','ventasOnline','montoEventos','ticketPromedio'].includes(id)) {
@@ -278,6 +292,9 @@ App.Indicadores = (() => {
       <div class="kpi-card" id="kpi-card-${k.id}">
         <div class="kpi-header">
           <span class="kpi-label" id="lbl-${k.id}">${k.label}</span>
+          ${k.tooltip ? `<span class="kpi-help"
+            onmouseenter="App.Indicadores.showTooltip(event,'${k.id}')"
+            onmouseleave="App.Indicadores.hideTooltip()">?</span>` : ''}
           <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
         </div>
         <div class="kpi-value" id="val-${k.id}">—</div>
@@ -319,12 +336,14 @@ App.Indicadores = (() => {
       <div class="threshold-log-section">
         <div class="threshold-log-header">
           <span class="kpi-section-title" style="margin:0;">Registro de cambios de umbrales</span>
-          ${canConfigure()
+          ${canAdmin()
             ? `<button onclick="App.Indicadores.clearLog()" class="btn-log-clear">Limpiar historial</button>`
             : ''}
         </div>
         <div id="threshold-log-container"></div>
       </div>
+      <!-- Tooltip flotante -->
+      <div id="kpi-tooltip" class="kpi-tooltip hidden"></div>
       <!-- Overlay de configuración -->
       <div id="config-overlay" class="config-overlay hidden" onclick="if(event.target===this)App.Indicadores.closeConfig()">
         <div class="config-box">
@@ -441,6 +460,19 @@ App.Indicadores = (() => {
     if (tsEl) tsEl.textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es-CL');
   }
 
+  function _flashUpdate() {
+    const tsEl = document.getElementById('kpi-ts');
+    if (tsEl) {
+      tsEl.classList.add('kpi-ts-flash');
+      setTimeout(() => tsEl.classList.remove('kpi-ts-flash'), 1000);
+    }
+    const banner = document.getElementById('kpi-banner');
+    if (banner) {
+      banner.classList.add('banner-flash');
+      setTimeout(() => banner.classList.remove('banner-flash'), 800);
+    }
+  }
+
   return {
     async init(cont) {
       container      = cont;
@@ -450,12 +482,20 @@ App.Indicadores = (() => {
       await this.refresh();
       renderLog();
       refreshInterval = setInterval(() => App.Indicadores.refresh(), 15000);
+      _docClickHandler = e => {
+        if (!e.target.classList.contains('kpi-help')) App.Indicadores.hideTooltip();
+      };
+      document.addEventListener('click', _docClickHandler);
     },
 
     destroy() {
       if (refreshInterval) {
         clearInterval(refreshInterval);
         refreshInterval = null;
+      }
+      if (_docClickHandler) {
+        document.removeEventListener('click', _docClickHandler);
+        _docClickHandler = null;
       }
     },
 
@@ -464,6 +504,7 @@ App.Indicadores = (() => {
         rawData = await fetchAllRaw();
         applyValues(computeValues(rawData, sucursalFiltro));
         updateKpiVisibility(sucursalFiltro);
+        _flashUpdate();
       } catch (err) {
         console.error('Error indicadores:', err);
       }
@@ -502,7 +543,6 @@ App.Indicadores = (() => {
         `Configurar: ${kpi.label} — ${contexto}`;
       document.getElementById('config-input').value = thresholds[kpiId] ?? DEFAULTS[kpiId] ?? 0;
 
-      // Referencia: mostrar umbral global si estamos en sucursal
       const refEl = document.getElementById('config-ref');
       if (refEl) {
         if (sucursalFiltro) {
@@ -525,10 +565,29 @@ App.Indicadores = (() => {
     },
 
     clearLog() {
-      if (!canConfigure()) return;
+      if (!canAdmin()) return;
       if (!confirm('¿Eliminar todo el historial de cambios?')) return;
       localStorage.removeItem(THRESHOLD_LOG_KEY);
       renderLog();
+    },
+
+    showTooltip(event, kpiId) {
+      const kpi = KPIS.find(k => k.id === kpiId);
+      if (!kpi?.tooltip) return;
+      const el = document.getElementById('kpi-tooltip');
+      if (!el) return;
+      el.textContent = kpi.tooltip;
+      el.classList.remove('hidden');
+      const rect      = event.target.getBoundingClientRect();
+      const content   = document.getElementById('app-content');
+      const scrollTop = content ? content.scrollTop : 0;
+      el.style.top  = (rect.bottom + scrollTop + 6) + 'px';
+      el.style.left = Math.max(8, rect.left - 100) + 'px';
+    },
+
+    hideTooltip() {
+      const el = document.getElementById('kpi-tooltip');
+      if (el) el.classList.add('hidden');
     },
 
     // Expuesto para uso de otros módulos (Reportes)
