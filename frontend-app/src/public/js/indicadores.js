@@ -7,7 +7,6 @@ App.Indicadores = (() => {
     ventasTotales:    5000000,
     ventasPresencial: 2500000,
     ventasOnline:     2500000,
-    ticketPromedio:     50000,
     itemsInventario:       50,
     promedioHoras:          5,
     montoEventos:     3000000,
@@ -16,11 +15,12 @@ App.Indicadores = (() => {
   const KPIS = [
     // ── Zona main ──────────────────────────────────────────────────────────
     {
-      id:      'ventasTotales',
-      zone:    'main',
-      label:   'Ventas Totales',
-      format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext: (data, sucursal) => sucursal
+      id:            'ventasTotales',
+      zone:          'main',
+      label:         'Ventas Totales',
+      labelSucursal: 'Ventas Presenciales',
+      format:        v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext:       (data, sucursal) => sucursal
         ? `${data.totalTransacciones} transacciones en esta sucursal`
         : `${data.totalTransacciones} transacciones totales`,
     },
@@ -41,12 +41,26 @@ App.Indicadores = (() => {
       subtext:    data => `${data.transaccionesOnline} transacciones online`,
     },
     {
-      id:           'ticketPromedio',
+      id:          'sucursalLider',
+      zone:        'main',
+      globalOnly:  true,
+      noThreshold: true,
+      label:       'Sucursal Líder',
+      format:      v => v || '—',
+      subtext:     data => data.sucursalLiderMonto
+        ? '$' + Math.round(data.sucursalLiderMonto).toLocaleString('es-CL') + ' en ventas'
+        : 'Sin datos suficientes',
+    },
+    {
+      id:           'rankingSucursal',
       zone:         'main',
       sucursalOnly: true,
-      label:        'Ticket Promedio',
-      format:       v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext:      () => 'Valor promedio por transacción',
+      noThreshold:  true,
+      label:        'Ranking Sucursal',
+      format:       v => v ? `#${v}` : '—',
+      subtext:      data => data.rankingTotal
+        ? `de ${data.rankingTotal} sucursales · ${data.rankingPct}% superior`
+        : 'Sin datos para comparar',
     },
 
     // ── Zona ops ───────────────────────────────────────────────────────────
@@ -88,17 +102,26 @@ App.Indicadores = (() => {
   let rawData         = { ventas: [], inventario: [], empleados: [], eventos: [] };
   let sucursalFiltro  = '';
 
+  function getContextKey() {
+    return sucursalFiltro || 'global';
+  }
+
   function loadThresholds() {
     try {
-      const saved = JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
-      thresholds = { ...DEFAULTS, ...saved };
+      const all = JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
+      const ctx = all[getContextKey()] || {};
+      thresholds = { ...DEFAULTS, ...ctx };
     } catch {
       thresholds = { ...DEFAULTS };
     }
   }
 
   function saveThresholds() {
-    localStorage.setItem(THRESHOLD_KEY, JSON.stringify(thresholds));
+    try {
+      const all = JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
+      all[getContextKey()] = { ...thresholds };
+      localStorage.setItem(THRESHOLD_KEY, JSON.stringify(all));
+    } catch { /* silent */ }
   }
 
   async function fetchAllRaw() {
@@ -127,7 +150,6 @@ App.Indicadores = (() => {
     const transaccionesOnline = v.filter(r => r.canal === 'Online').length;
     const transaccionesTienda = v.filter(r => r.canal === 'Tienda Física').length;
     const totalTransacciones  = v.length;
-    const ticketPromedio      = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
     const ventasPresencial    = v
       .filter(r => r.canal === 'Tienda Física')
       .reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
@@ -142,14 +164,41 @@ App.Indicadores = (() => {
     const montoEventos        = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
     const totalEventos        = ev.length;
 
+    // Ranking de sucursales (siempre sobre el dataset completo, no filtrado)
+    const ventasPorSucursal = {};
+    data.ventas.forEach(r => {
+      if (!r.sucursal) return;
+      ventasPorSucursal[r.sucursal] = (ventasPorSucursal[r.sucursal] || 0)
+        + (parseFloat(r.montoTotal) || 0);
+    });
+    const ranking = Object.entries(ventasPorSucursal).sort((a, b) => b[1] - a[1]);
+
+    const sucursalLider      = ranking.length > 0 ? ranking[0][0] : null;
+    const sucursalLiderMonto = ranking.length > 0 ? ranking[0][1] : 0;
+
+    let rankingSucursal = null;
+    let rankingTotal    = ranking.length;
+    let rankingPct      = null;
+    if (sucursal && ranking.length > 0) {
+      const pos = ranking.findIndex(([s]) => s === sucursal);
+      if (pos !== -1) {
+        rankingSucursal = pos + 1;
+        rankingPct      = Math.round(((rankingTotal - pos) / rankingTotal) * 100);
+      }
+    }
+
     return {
       ventasTotales,
       totalTransacciones,
-      ticketPromedio,
       transaccionesOnline,
       transaccionesTienda,
       ventasPresencial,
       ventasOnline,
+      sucursalLider,
+      sucursalLiderMonto,
+      rankingSucursal,
+      rankingTotal,
+      rankingPct,
       itemsInventario,
       stockCritico,
       totalEmpleados,
@@ -165,8 +214,8 @@ App.Indicadores = (() => {
   }
 
   function formatThreshold(id) {
-    const v = thresholds[id];
-    if (['ventasTotales','ticketPromedio','ventasPresencial','ventasOnline','montoEventos'].includes(id)) {
+    const v = thresholds[id] ?? 0;
+    if (['ventasTotales','ventasPresencial','ventasOnline','montoEventos'].includes(id)) {
       return '$' + Math.round(v).toLocaleString('es-CL');
     }
     if (id === 'promedioHoras') return v + ' hrs';
@@ -175,30 +224,34 @@ App.Indicadores = (() => {
 
   function updateKpiVisibility(sucursal) {
     KPIS.forEach(k => {
-      const card = document.getElementById(`kpi-card-${k.id}`);
+      const card  = document.getElementById(`kpi-card-${k.id}`);
+      const label = document.getElementById(`lbl-${k.id}`);
       if (!card) return;
       let visible = true;
       if (k.globalOnly   && sucursal)  visible = false;
       if (k.sucursalOnly && !sucursal) visible = false;
       card.classList.toggle('hidden', !visible);
+      if (label && k.labelSucursal) {
+        label.textContent = sucursal ? k.labelSucursal : k.label;
+      }
     });
   }
 
   function renderCard(k) {
+    const footer = k.noThreshold
+      ? `<span class="kpi-threshold" style="color:var(--blue-mid);font-style:italic;">Indicador informativo</span>`
+      : `<span class="kpi-threshold" id="thr-${k.id}">Umbral: ${formatThreshold(k.id)}</span>
+         ${canConfigure() ? `<button class="btn-config" onclick="App.Indicadores.openConfig('${k.id}')">Configurar</button>` : ''}`;
+
     return `
       <div class="kpi-card" id="kpi-card-${k.id}">
         <div class="kpi-header">
-          <span class="kpi-label">${k.label}</span>
+          <span class="kpi-label" id="lbl-${k.id}">${k.label}</span>
           <span class="semaphore semaphore-loading" id="sem-${k.id}" title="Calculando..."></span>
         </div>
         <div class="kpi-value" id="val-${k.id}">—</div>
         <div class="kpi-sub" id="sub-${k.id}" style="font-size:0.78rem;color:#666;margin:2px 0 6px 0;">—</div>
-        <div class="kpi-footer">
-          <span class="kpi-threshold" id="thr-${k.id}">Umbral: ${formatThreshold(k.id)}</span>
-          ${canConfigure()
-            ? `<button class="btn-config" onclick="App.Indicadores.openConfig('${k.id}')">Configurar</button>`
-            : ''}
-        </div>
+        <div class="kpi-footer">${footer}</div>
       </div>`;
   }
 
@@ -236,6 +289,7 @@ App.Indicadores = (() => {
       <div id="config-overlay" class="config-overlay hidden" onclick="if(event.target===this)App.Indicadores.closeConfig()">
         <div class="config-box">
           <h3 id="config-title">Configurar umbral</h3>
+          <small id="config-ref" style="display:block;color:var(--text-muted);font-size:11px;margin-bottom:12px;"></small>
           <label>Valor mínimo aceptable</label>
           <input type="number" id="config-input" min="0" step="1">
           <div class="config-actions">
@@ -250,21 +304,28 @@ App.Indicadores = (() => {
   function applyValues(values) {
     currentValues = values;
     KPIS.forEach(k => {
-      const val    = values[k.id] ?? 0;
-      const ok     = val >= (thresholds[k.id] ?? 0);
+      const raw    = values[k.id];
       const valEl  = document.getElementById(`val-${k.id}`);
       const subEl  = document.getElementById(`sub-${k.id}`);
       const semEl  = document.getElementById(`sem-${k.id}`);
       const cardEl = document.getElementById(`kpi-card-${k.id}`);
-      if (valEl) valEl.textContent = k.format(val);
+
+      if (valEl) valEl.textContent = k.format(raw);
       if (subEl && k.subtext) subEl.textContent = k.subtext(values, sucursalFiltro);
-      if (semEl) {
-        semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
-        semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
-      }
-      if (cardEl) {
-        cardEl.classList.toggle('card-green', ok);
-        cardEl.classList.toggle('card-red', !ok);
+
+      if (!k.noThreshold) {
+        const ok = (parseFloat(raw) || 0) >= (thresholds[k.id] ?? 0);
+        if (semEl) {
+          semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
+          semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
+        }
+        if (cardEl) {
+          cardEl.classList.toggle('card-green', ok);
+          cardEl.classList.toggle('card-red', !ok);
+        }
+      } else {
+        if (semEl)  { semEl.className = 'semaphore semaphore-info'; semEl.title = 'Indicador informativo'; }
+        if (cardEl) { cardEl.classList.remove('card-green', 'card-red'); }
       }
     });
     const tsEl = document.getElementById('kpi-ts');
@@ -316,16 +377,36 @@ App.Indicadores = (() => {
         }
       }
 
-      applyValues(computeValues(rawData, sucursalFiltro));
+      loadThresholds();
       updateKpiVisibility(sucursalFiltro);
+      applyValues(computeValues(rawData, sucursalFiltro));
     },
 
     openConfig(kpiId) {
       if (!canConfigure()) return;
       configTarget = kpiId;
-      const kpi = KPIS.find(k => k.id === kpiId);
-      document.getElementById('config-title').textContent = 'Configurar: ' + kpi.label;
-      document.getElementById('config-input').value = thresholds[kpiId];
+      const kpi     = KPIS.find(k => k.id === kpiId);
+      const contexto = sucursalFiltro ? `Sucursal: ${sucursalFiltro}` : 'Vista global';
+      document.getElementById('config-title').textContent =
+        `Configurar: ${kpi.label} — ${contexto}`;
+      document.getElementById('config-input').value = thresholds[kpiId] ?? DEFAULTS[kpiId] ?? 0;
+
+      // Referencia: mostrar umbral global si estamos en sucursal
+      const refEl = document.getElementById('config-ref');
+      if (refEl) {
+        if (sucursalFiltro) {
+          try {
+            const all      = JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
+            const globalVal = (all['global'] || {})[kpiId] ?? DEFAULTS[kpiId] ?? 0;
+            refEl.textContent = `Referencia global: ${formatThreshold.call(
+              null, kpiId, globalVal
+            )} (umbral para todas las sucursales)`;
+          } catch { refEl.textContent = ''; }
+        } else {
+          refEl.textContent = '';
+        }
+      }
+
       document.getElementById('config-overlay').classList.remove('hidden');
     },
 

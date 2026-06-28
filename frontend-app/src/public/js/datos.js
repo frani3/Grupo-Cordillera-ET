@@ -113,26 +113,31 @@ function filterControls(tab) {
       </select>`;
     }
     return `
-      <select id="fc-sucursal">
-        <option value="">Sucursal (todas)</option>
-        ${SUCURSALES.map(s => `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-      </select>
-      <input type="date" id="fc-desde" title="Desde">
-      <input type="date" id="fc-hasta" title="Hasta">
-      ${extra}
-      <button onclick="App.Datos.applyFilters()" class="btn btn-primary btn-sm">Filtrar</button>
-      <button onclick="App.Datos.clearFilters()" class="btn btn-secondary btn-sm">Limpiar</button>
-      <input
-        type="text"
-        id="datos-search"
-        class="datos-search-input"
-        placeholder="Buscar en resultados..."
-        oninput="App.Datos.search()"
-      />
+      <div class="filter-row">
+        <select id="fc-sucursal">
+          <option value="">Sucursal (todas)</option>
+          ${SUCURSALES.map(s => `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+        </select>
+        <input type="date" id="fc-desde" title="Desde">
+        <input type="date" id="fc-hasta" title="Hasta">
+        ${extra}
+        <button onclick="App.Datos.applyFilters()" class="btn btn-primary btn-sm">Filtrar</button>
+        <button onclick="App.Datos.clearFilters()" class="btn btn-secondary btn-sm">Limpiar</button>
+      </div>
+      <div class="filter-search-row">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="datos-search"
+          class="datos-search-input"
+          placeholder="Buscar en todos los campos: ID, nombre, sucursal, monto..."
+          oninput="App.Datos.search()"
+        />
+      </div>
     `;
   }
 
-  function applyFilters() {
+  function computeFilters() {
     const suc   = document.getElementById('fc-sucursal')?.value || '';
     const desde = document.getElementById('fc-desde')?.value   || '';
     const hasta = document.getElementById('fc-hasta')?.value   || '';
@@ -140,9 +145,8 @@ function filterControls(tab) {
       ? (document.getElementById('fc-canal')?.value || '') : '';
 
     let result = allData.filter(r => {
-      // Sucursal: en ventas, los registros Online no tienen sucursal física.
-      // Solo se excluyen por sucursal si el canal seleccionado es "Tienda Física"
-      // o si el propio registro tiene sucursal (Tienda Física sin filtro de canal).
+      // En ventas, los registros Online no tienen sucursal física:
+      // solo se excluyen si tienen una sucursal distinta a la seleccionada.
       if (suc) {
         const esOnlineSinSucursal = activeTab === 'ventas' && !r.sucursal;
         if (!esOnlineSinSucursal && r.sucursal !== suc) return false;
@@ -282,7 +286,7 @@ function filterControls(tab) {
 
     applyFilters() {
       currentPage  = 1;
-      filteredData = applyFilters();
+      filteredData = computeFilters();
       renderTable(filteredData);
     },
 
@@ -305,7 +309,7 @@ function filterControls(tab) {
     search() {
       searchQuery  = document.getElementById('datos-search')?.value.toLowerCase().trim() || '';
       currentPage  = 1;
-      filteredData = applyFilters();
+      filteredData = computeFilters();
       renderTable(filteredData);
     },
 

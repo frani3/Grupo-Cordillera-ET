@@ -318,8 +318,9 @@ table { border-collapse: collapse; width: 100%; }
   margin-top: 2px;
 }
 .semaphore-loading { background: var(--gray-300); }
-.semaphore-green   { background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
-.semaphore-red     { background: var(--red);   box-shadow: 0 0 0 3px var(--red-light);   }
+.semaphore-green   { background: var(--green);      box-shadow: 0 0 0 3px var(--green-light); }
+.semaphore-red     { background: var(--red);         box-shadow: 0 0 0 3px var(--red-light);   }
+.semaphore-info    { background: var(--blue-light);  box-shadow: 0 0 0 3px #dbeafe; }
 
 .btn-config {
   padding: 3px 8px;
@@ -385,14 +386,31 @@ table { border-collapse: collapse; width: 100%; }
 /* ── Filter bar ─────────────────────────────────────────────────────────────── */
 .filter-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   padding: 14px;
   background: var(--white);
   border-radius: var(--radius);
   margin-bottom: 14px;
   box-shadow: var(--shadow-sm);
+}
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.filter-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--gray-200);
+  padding-top: 10px;
+}
+.search-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 .filter-bar select,
 .filter-bar input[type="text"],
@@ -694,16 +712,16 @@ tbody tr:hover td { background: var(--gray-100); }
 /* Barra de búsqueda en Datos Crudos */
 .datos-search-input {
   flex: 1;
-  min-width: 200px;
   padding: 7px 12px;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--text);
   background: var(--white);
+  transition: var(--transition);
 }
 .datos-search-input:focus {
   outline: none;
   border-color: var(--blue-mid);
-  box-shadow: 0 0 0 2px rgba(37,99,168,.15);
+  box-shadow: 0 0 0 2px rgba(37,99,168,.12);
 }
