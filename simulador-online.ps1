@@ -40,7 +40,7 @@ function Enviar-Online {
     $sku        = $skus | Get-Random
     $precio     = $precios[$sku]
     $cant       = Get-Random -Minimum 1 -Maximum 4
-    $total      = [math]::Round($precio * $cant, 2)
+    $total      = [int]($precio * $cant)
     $plataforma = $plataformas | Get-Random
     $trx        = "TRX-ONLINE-$("{0:D4}" -f $script:counter)-$(Get-Random -Minimum 1000 -Maximum 9999)"
     $fecha      = Get-FechaAleatoria

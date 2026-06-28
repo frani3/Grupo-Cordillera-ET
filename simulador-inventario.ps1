@@ -31,12 +31,22 @@ function Esperar-Servicio {
 
 function Enviar-Item {
     $script:counter++
+    $categoria = $categorias | Get-Random
+    $precio_raw = switch ($categoria) {
+        "electronica" { Get-Random -Minimum 9990  -Maximum 299990 }
+        "ropa"        { Get-Random -Minimum 4990  -Maximum 49990  }
+        "alimentos"   { Get-Random -Minimum 490   -Maximum 9990   }
+        "hogar"       { Get-Random -Minimum 2990  -Maximum 89990  }
+        "deportes"    { Get-Random -Minimum 2990  -Maximum 69990  }
+        default       { Get-Random -Minimum 990   -Maximum 29990  }
+    }
+    $precio_unitario = [int]([math]::Round($precio_raw / 10) * 10)
     $item = @{
         item_id         = "ITEM-" + (Get-Random -Minimum 1000 -Maximum 9999)
-        categoria       = $categorias | Get-Random
+        categoria       = $categoria
         nombre          = "Producto-" + (Get-Random -Minimum 100 -Maximum 999)
         cantidad        = Get-Random -Minimum 1 -Maximum 500
-        precio_unitario = [math]::Round((Get-Random -Minimum 100 -Maximum 50000) / 100.0, 2)
+        precio_unitario = $precio_unitario
         sucursal        = $sucursales | Get-Random
         fecha           = Get-FechaAleatoria
     }

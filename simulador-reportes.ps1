@@ -32,12 +32,21 @@ function Esperar-Servicio {
 function Enviar-Evento {
     $script:counter++
     $tipo  = $tipos | Get-Random
+    $monto_raw = switch ($tipo) {
+        "cierre-diario" { Get-Random -Minimum 500000  -Maximum 5000000  }
+        "conciliacion"  { Get-Random -Minimum 100000  -Maximum 2000000  }
+        "descuento"     { Get-Random -Minimum 5000    -Maximum 150000   }
+        "devolucion"    { Get-Random -Minimum 5000    -Maximum 200000   }
+        "bonificacion"  { Get-Random -Minimum 10000   -Maximum 300000   }
+        default         { Get-Random -Minimum 10000   -Maximum 500000   }
+    }
+    $monto = [int]([math]::Round($monto_raw / 100) * 100)
     $rndId = Get-Random -Minimum 10000 -Maximum 99999
     $evento = @{
         reporte_id  = "REP-" + $rndId
         tipo        = $tipo
         descripcion = "Evento de $tipo generado automaticamente"
-        monto       = [math]::Round((Get-Random -Minimum 10000 -Maximum 10000000) / 100.0, 2)
+        monto       = $monto
         sucursal    = $sucursales | Get-Random
         fecha       = Get-FechaAleatoria
     }

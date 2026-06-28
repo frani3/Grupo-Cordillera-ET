@@ -10,8 +10,8 @@ $metodos   = @("DEBITO","CREDITO","EFECTIVO","TRANSFERENCIA")
 $vendedores = @("VND-01","VND-02","VND-03","VND-04","VND-05","VND-07")
 $skus      = @("LAPTOP-01","AURICULARES-01","TABLET-02","TECLADO-03","MOUSE-04","MONITOR-05","SILLA-06")
 $precios   = @{
-    "LAPTOP-01"=29990.0; "AURICULARES-01"=5990.0; "TABLET-02"=12500.0
-    "TECLADO-03"=8990.0; "MOUSE-04"=3490.0; "MONITOR-05"=19990.0; "SILLA-06"=45000.0
+    "LAPTOP-01"=29990; "AURICULARES-01"=5990; "TABLET-02"=12500
+    "TECLADO-03"=8990; "MOUSE-04"=3490; "MONITOR-05"=19990; "SILLA-06"=45000
 }
 $counter = 0
 
@@ -41,7 +41,7 @@ function Enviar-POS {
     $sku      = $skus | Get-Random
     $precio   = $precios[$sku]
     $cant     = Get-Random -Minimum 1 -Maximum 4
-    $total    = [math]::Round($precio * $cant, 2)
+    $total    = [int]($precio * $cant)
     $sucursal = $sucursales | Get-Random
     $trx      = "TRX-POS-$("{0:D4}" -f $script:counter)-$(Get-Random -Minimum 1000 -Maximum 9999)"
     $fecha    = Get-FechaAleatoria
