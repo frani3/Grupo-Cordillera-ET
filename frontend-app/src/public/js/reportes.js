@@ -401,7 +401,7 @@ App.Reportes = (() => {
           </div>
 
           <!-- Fechas en fila -->
-          <div class="params-row">
+          <div class="params-dates">
             <div class="form-group">
               <label>Fecha Desde</label>
               <input type="date" id="rp-desde">
