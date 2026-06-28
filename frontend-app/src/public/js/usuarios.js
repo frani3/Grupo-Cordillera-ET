@@ -13,6 +13,8 @@ App.Usuarios = (() => {
   function renderTabla() {
     const el = document.getElementById('users-table');
     if (!el) return;
+    const subtitleEl = document.querySelector('.card-subtitle');
+    if (subtitleEl) subtitleEl.textContent = lista.length + ' usuarios en el sistema';
     el.innerHTML = `
       <div class="table-scroll">
         <table>
@@ -30,7 +32,9 @@ App.Usuarios = (() => {
                 <td>
                   ${u.real
                     ? '<span class="text-muted small">Sistema</span>'
-                    : `<button onclick="App.Usuarios.eliminar(${u.id})" class="btn btn-danger btn-sm">Eliminar</button>`}
+                    : `<button onclick="App.Usuarios.eliminar(${u.id})" class="btn btn-danger btn-sm">
+                        ${App.Icons?.trash || 'Eliminar'}
+                      </button>`}
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -42,18 +46,36 @@ App.Usuarios = (() => {
   function render() {
     container.innerHTML = `
       <div class="page-header">
-        <h2>Gestión de Usuarios</h2>
-        <span class="badge-info">Solo administradores</span>
+        <div>
+          <h2>Gestión de Usuarios</h2>
+          <p class="text-muted small" style="margin-top:4px">
+            Administración de accesos al sistema
+          </p>
+        </div>
+        <div class="page-header-actions">
+          <span class="role-badge role-admin">Solo administradores</span>
+        </div>
       </div>
+
       <div class="users-layout">
 
-        <div class="users-table-section">
-          <h3>Usuarios registrados</h3>
+        <div class="card" style="padding:0; overflow:hidden">
+          <div class="card-header" style="padding:16px 20px">
+            <div>
+              <div class="card-title">Usuarios registrados</div>
+              <div class="card-subtitle">${lista.length} usuarios en el sistema</div>
+            </div>
+          </div>
           <div id="users-table"></div>
         </div>
 
-        <div class="users-form-section">
-          <h3>Crear usuario</h3>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Nuevo usuario</div>
+              <div class="card-subtitle">Los usuarios creados son solo en sesión</div>
+            </div>
+          </div>
           <div class="form-group">
             <label>Nombre de usuario</label>
             <input type="text" id="u-username" placeholder="nuevousuario">
@@ -73,12 +95,13 @@ App.Usuarios = (() => {
               <option value="ADMIN">Administrador</option>
             </select>
           </div>
-          <button onclick="App.Usuarios.crear()" class="btn btn-primary" style="width:100%">Crear usuario</button>
-          <div id="u-msg" style="margin-top:8px"></div>
+          <button onclick="App.Usuarios.crear()" class="btn btn-primary btn-full">
+            ${App.Icons?.plus || '+'} Crear usuario
+          </button>
+          <div id="u-msg" style="margin-top:10px"></div>
           <div class="info-box mt-2">
-            <strong>Nota:</strong> Los usuarios creados aquí son simulados y existen solo en
-            memoria durante esta sesión. El backend reconoce únicamente los usuarios
-            semilla: <strong>admin</strong> y <strong>usuario</strong>.
+            El backend reconoce únicamente los usuarios semilla:
+            <strong>admin</strong> y <strong>usuario</strong>.
           </div>
         </div>
 

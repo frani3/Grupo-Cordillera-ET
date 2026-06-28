@@ -689,19 +689,15 @@ tbody tr:hover td { background: var(--gray-100); }
 /* ── Usuarios ───────────────────────────────────────────────────────────────── */
 .users-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 340px;
   gap: 20px;
   align-items: start;
 }
 @media (max-width: 900px) { .users-layout { grid-template-columns: 1fr; } }
 .users-table-section h3,
-.users-form-section h3 { font-size: 14px; font-weight: 600; color: var(--blue-dark); margin-bottom: 14px; }
-.users-form-section {
-  background: var(--white);
-  border-radius: var(--radius);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-}
+.users-form-section h3 { display: none; }
+.users-form-section { background: none; box-shadow: none; padding: 0; }
+.users-table-section  { background: none; }
 .info-box {
   background: #dbeafe;
   color: #1e40af;
@@ -1177,6 +1173,23 @@ tbody tr:hover td { background: var(--gray-100); }
   height: 1px;
   background: var(--gray-200);
 }
+
+/* ── Overrides para elementos dentro de .card ───────────────────────────── */
+.card .tabs {
+  padding: 0 20px;
+  margin: 0;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--white);
+}
+.card .filter-bar {
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+.card .table-container { padding: 0; }
+.card table { border-radius: 0; }
+.card .table-scroll { box-shadow: none; border-radius: 0; }
 
 /* ── Banner context dots ─────────────────────────────────────────────────── */
 .kpi-banner-total::before {

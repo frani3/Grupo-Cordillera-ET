@@ -359,8 +359,10 @@ App.Reportes = (() => {
         <h2>Reportes Ejecutivos</h2>
       </div>
       <div class="report-layout">
-        <div class="report-panel">
-          <h3>Parámetros</h3>
+        <div class="report-panel card">
+          <div class="card-header" style="margin:-20px -20px 16px; padding:16px 20px">
+            <div class="card-title">Parámetros</div>
+          </div>
 
           <!-- Sucursales y Tipos en fila -->
           <div class="params-row">
@@ -412,8 +414,8 @@ App.Reportes = (() => {
             </div>
           </div>
 
-          <button onclick="App.Reportes.generar()" class="btn btn-primary">
-            Generar Reporte
+          <button onclick="App.Reportes.generar()" class="btn btn-primary btn-full">
+            ${App.Icons?.chart || ''} Generar Reporte
           </button>
         </div>
         <div class="report-results" id="rp-results">
@@ -423,8 +425,8 @@ App.Reportes = (() => {
           </div>
         </div>
       </div>
-      <div class="historial-section">
-        <h3>Historial de reportes generados</h3>
+      <div class="historial-section card" style="margin-top:0">
+        <div class="section-title">Historial de reportes generados</div>
         <div id="rp-historial"></div>
       </div>`;
     renderHistorial();

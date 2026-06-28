@@ -242,17 +242,36 @@ function filterControls(tab) {
   function renderShell() {
     container.innerHTML = `
       <div class="page-header">
-        <h2>Datos Crudos</h2>
-        <button onclick="App.Datos.refresh()" class="btn btn-secondary">↻ Actualizar</button>
+        <div>
+          <h2>Datos Crudos</h2>
+          <p class="text-muted small" style="margin-top:4px">
+            Visualización en tiempo real de todos los registros por dominio
+          </p>
+        </div>
+        <div class="page-header-actions">
+          <button onclick="App.Datos.refresh()"
+            class="btn-icon" title="Actualizar datos">
+            ${App.Icons?.refresh || '↻'}
+          </button>
+        </div>
       </div>
-      <div class="tabs" id="datos-tabs">
-        ${TABS.map(t => `
-          <button class="tab-btn ${t.id === activeTab ? 'active' : ''}"
-            onclick="App.Datos.switchTab('${t.id}')">${t.label}</button>`).join('')}
+
+      <div class="card" style="padding:0; overflow:hidden; margin-bottom:20px">
+        <div class="tabs" id="datos-tabs" style="margin:0; border-bottom:1px solid var(--gray-200); padding:0 20px">
+          ${TABS.map(t => `
+            <button class="tab-btn ${t.id === activeTab ? 'active' : ''}"
+              onclick="App.Datos.switchTab('${t.id}')">${t.label}</button>
+          `).join('')}
+        </div>
+        <div class="filter-bar" id="filter-bar"
+          style="box-shadow:none; border-radius:0; border-bottom:1px solid var(--gray-100); margin:0">
+          ${filterControls(activeTab)}
+        </div>
+        <div id="table-container" class="table-container" style="padding:0">
+          <div class="loading">Cargando datos…</div>
+        </div>
+        <div id="pagination" style="padding:12px 20px; border-top:1px solid var(--gray-100)"></div>
       </div>
-      <div class="filter-bar" id="filter-bar">${filterControls(activeTab)}</div>
-<div id="table-container" class="table-container"><div class="loading">Cargando datos…</div></div>
-      <div id="pagination"></div>
     `;
   }
 
