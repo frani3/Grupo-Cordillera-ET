@@ -531,6 +531,10 @@ App.Indicadores = (() => {
       renderLog();
     },
 
+    // Expuesto para uso de otros módulos (Reportes)
+    fetchRaw:    () => fetchAllRaw(),
+    computeKpis: (data, sucursal) => computeValues(data, sucursal),
+
     saveConfig() {
       if (!configTarget) return;
       const raw = document.getElementById('config-input').value;

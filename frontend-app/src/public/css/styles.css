@@ -784,3 +784,100 @@ tbody tr:hover td { background: var(--gray-100); }
   text-align: center;
   padding: 20px 0;
 }
+
+/* ── Reporte ejecutivo ───────────────────────────────────────────────────── */
+.report-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.report-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--gray-100);
+}
+.report-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.report-kpi {
+  background: var(--gray-100);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.report-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text-muted);
+}
+.report-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.report-kpi-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.text-red   { color: var(--red)   !important; }
+.text-green { color: var(--green) !important; }
+
+/* Ranking top sucursales */
+.ranking-list { display: flex; flex-direction: column; gap: 8px; }
+.ranking-item {
+  display: grid;
+  grid-template-columns: 28px 140px 1fr 110px;
+  align-items: center;
+  gap: 10px;
+}
+.ranking-pos  { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.ranking-name { font-size: 13px; font-weight: 500; }
+.ranking-bar-wrap {
+  background: var(--gray-200);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.ranking-bar {
+  background: var(--blue-mid);
+  height: 100%;
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+.ranking-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+/* Botón re-generar en historial */
+.btn-regener {
+  background: none;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--blue-mid);
+  transition: var(--transition);
+}
+.btn-regener:hover {
+  background: var(--gray-100);
+  border-color: var(--blue-mid);
+}
