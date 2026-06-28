@@ -11,6 +11,23 @@ App.Reportes = (() => {
   let container  = null;
   let lastResult = null; // { params, rawFiltrado, kpis }
 
+  // ── Lectura de controles ─────────────────────────────────────────────────
+  function getSelectedSucursales() {
+    const todasEl = document.getElementById('rp-suc-todas');
+    if (todasEl?.checked) return [];
+    return Array.from(
+      document.querySelectorAll('.rp-suc-cb:checked')
+    ).map(cb => cb.value);
+  }
+
+  function getSelectedTipos() {
+    const todosEl = document.getElementById('rp-tipo-todos');
+    if (todosEl?.checked) return [];
+    return Array.from(
+      document.querySelectorAll('.rp-tipo-cb:checked')
+    ).map(cb => cb.value);
+  }
+
   // ── Historial ────────────────────────────────────────────────────────────
   function loadHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
@@ -22,9 +39,11 @@ App.Reportes = (() => {
     h.unshift({
       id:                 Date.now(),
       generado:           new Date().toLocaleString('es-CL'),
-      sucursal:           params.sucursal || 'Todas',
-      desde:              params.desde    || '—',
-      hasta:              params.hasta    || '—',
+      sucursal:           params.sucursales?.length > 0
+                            ? params.sucursales.join(', ')
+                            : 'Todas',
+      desde:              params.desde || '—',
+      hasta:              params.hasta || '—',
       ventasTotales:      kpis.ventasTotales,
       totalTransacciones: kpis.totalTransacciones,
       totalEventos:       kpis.totalEventos,
@@ -35,11 +54,13 @@ App.Reportes = (() => {
 
   // ── Filtrado de datos crudos ─────────────────────────────────────────────
   function filtrarPorContexto(raw, params) {
-    const { sucursal, desde, hasta } = params;
+    const sucursales = params.sucursales || [];
+    const { desde, hasta } = params;
 
     function filtrarArray(arr) {
       return arr.filter(r => {
-        if (sucursal && r.sucursal !== sucursal) return false;
+        if (sucursales.length > 0 && r.sucursal && !sucursales.includes(r.sucursal))
+          return false;
         if (desde || hasta) {
           const d = new Date(r.fecha);
           if (desde && d < new Date(desde))               return false;
@@ -69,11 +90,12 @@ App.Reportes = (() => {
     if (!lastResult) return;
     const { params, rawFiltrado, kpis } = lastResult;
     const p = params;
+    const sucLabel = p.sucursales?.length > 0 ? p.sucursales.join(', ') : 'Todas';
 
     const lines = [
       '# GRUPO CORDILLERA — REPORTE EJECUTIVO',
       `# Generado: ${new Date().toLocaleString('es-CL')}`,
-      `# Sucursal: ${p.sucursal || 'Todas'} | Desde: ${p.desde || '—'} | Hasta: ${p.hasta || '—'}`,
+      `# Sucursal: ${sucLabel} | Desde: ${p.desde || '—'} | Hasta: ${p.hasta || '—'}`,
       '',
       '## RESUMEN KPIs DEL PERÍODO',
       'Indicador,Valor',
@@ -116,6 +138,10 @@ App.Reportes = (() => {
   // ── Render resultado ─────────────────────────────────────────────────────
   function renderResultado(params, rawFiltrado, kpis) {
     const fmt = v => '$' + Math.round(v).toLocaleString('es-CL');
+    const hayFiltroSucursal = params.sucursales?.length > 0;
+    const sucLabel = hayFiltroSucursal
+      ? params.sucursales.join(', ')
+      : 'Todas las sucursales';
 
     // Desglose ventas por canal
     const ventasPorCanal = {};
@@ -135,9 +161,9 @@ App.Reportes = (() => {
       eventosPorTipo[tipo].monto += parseFloat(r.monto || 0);
     });
 
-    // Top sucursales (solo si es vista global)
+    // Top sucursales: solo si no hay exactamente 1 sucursal seleccionada
     let topSucursalesHtml = '';
-    if (!params.sucursal) {
+    if (!params.sucursales || params.sucursales.length !== 1) {
       const porSucursal = {};
       rawFiltrado.ventas.forEach(r => {
         if (!r.sucursal) return;
@@ -179,8 +205,7 @@ App.Reportes = (() => {
           <div>
             <h4>Reporte ejecutivo</h4>
             <small class="text-muted">
-              ${params.sucursal || 'Todas las sucursales'} ·
-              ${params.desde || '—'} → ${params.hasta || '—'}
+              ${sucLabel} · ${params.desde || '—'} → ${params.hasta || '—'}
             </small>
           </div>
           <button onclick="App.Reportes.exportar()" class="btn btn-success btn-sm">
@@ -203,15 +228,18 @@ App.Reportes = (() => {
               <span class="report-kpi-sub">Por transacción</span>
             </div>
             <div class="report-kpi">
-              <span class="report-kpi-label">Ventas Presenciales</span>
+              <span class="report-kpi-label">
+                ${hayFiltroSucursal ? 'Ventas en Sucursal' : 'Ventas Presenciales'}
+              </span>
               <span class="report-kpi-value">${fmt(kpis.ventasPresencial)}</span>
               <span class="report-kpi-sub">${kpis.transaccionesTienda} en tienda</span>
             </div>
+            ${!hayFiltroSucursal ? `
             <div class="report-kpi">
               <span class="report-kpi-label">Ventas Online</span>
               <span class="report-kpi-value">${fmt(kpis.ventasOnline)}</span>
               <span class="report-kpi-sub">${kpis.transaccionesOnline} online</span>
-            </div>
+            </div>` : ''}
             <div class="report-kpi">
               <span class="report-kpi-label">Productos en Stock</span>
               <span class="report-kpi-value">${kpis.itemsInventario}</span>
@@ -231,7 +259,7 @@ App.Reportes = (() => {
           </div>
         </div>
 
-        <!-- Top sucursales (solo global) -->
+        <!-- Top sucursales -->
         ${topSucursalesHtml}
 
         <!-- Desglose ventas por canal -->
@@ -334,21 +362,38 @@ App.Reportes = (() => {
         <div class="report-panel">
           <h3>Parámetros</h3>
           <div class="form-group">
-            <label>Sucursal</label>
-            <select id="rp-sucursal">
-              <option value="">Todas</option>
-              ${SUCURSALES.map(s =>
-                `<option value="${s}">${s}</option>`).join('')}
-            </select>
+            <label>Sucursales</label>
+            <div class="multi-select" id="rp-sucursales">
+              <label class="multi-select-item multi-select-all">
+                <input type="checkbox" id="rp-suc-todas" value=""
+                  onchange="App.Reportes.toggleTodas(this)" checked>
+                <span>Todas las sucursales</span>
+              </label>
+              <div class="multi-select-divider"></div>
+              ${SUCURSALES.map(s => `
+                <label class="multi-select-item">
+                  <input type="checkbox" class="rp-suc-cb" value="${s}"
+                    onchange="App.Reportes.onSucursalChange()" disabled>
+                  <span>${s}</span>
+                </label>`).join('')}
+            </div>
           </div>
           <div class="form-group">
-            <label>Tipo de Evento</label>
-            <select id="rp-tipo">
-              <option value="">Todos</option>
-              ${TIPOS.map(t =>
-                `<option value="${t}">${t.replace(/-/g, ' ')
-                  .replace(/^\w/, c => c.toUpperCase())}</option>`).join('')}
-            </select>
+            <label>Tipos de Evento</label>
+            <div class="multi-select" id="rp-tipos">
+              <label class="multi-select-item multi-select-all">
+                <input type="checkbox" id="rp-tipo-todos" value=""
+                  onchange="App.Reportes.toggleTodosTipos(this)" checked>
+                <span>Todos los tipos</span>
+              </label>
+              <div class="multi-select-divider"></div>
+              ${TIPOS.map(t => `
+                <label class="multi-select-item">
+                  <input type="checkbox" class="rp-tipo-cb" value="${t}"
+                    onchange="App.Reportes.onTipoChange()" disabled>
+                  <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
+                </label>`).join('')}
+            </div>
           </div>
           <div class="form-group">
             <label>Fecha Desde</label>
@@ -386,10 +431,10 @@ App.Reportes = (() => {
 
     async generar(paramsOverride) {
       const params = paramsOverride || {
-        sucursal: document.getElementById('rp-sucursal')?.value || '',
-        tipo:     document.getElementById('rp-tipo')?.value     || '',
-        desde:    document.getElementById('rp-desde')?.value    || '',
-        hasta:    document.getElementById('rp-hasta')?.value    || '',
+        sucursales: getSelectedSucursales(),
+        tipos:      getSelectedTipos(),
+        desde:      document.getElementById('rp-desde')?.value || '',
+        hasta:      document.getElementById('rp-hasta')?.value || '',
       };
 
       const resultsEl = document.getElementById('rp-results');
@@ -397,16 +442,16 @@ App.Reportes = (() => {
         '<div class="loading">Generando reporte…</div>';
 
       try {
-        // 1. Obtener datos crudos via App.Indicadores (reutiliza la misma lógica)
+        // 1. Obtener datos crudos via App.Indicadores
         const raw = await App.Indicadores.fetchRaw();
 
-        // 2. Filtrar por sucursal y fechas
+        // 2. Filtrar por sucursales y fechas
         const rawFiltrado = filtrarPorContexto(raw, params);
 
-        // 3. Filtrar eventos por tipo adicionalmente
-        if (params.tipo) {
+        // 3. Filtrar eventos por tipos seleccionados
+        if (params.tipos && params.tipos.length > 0) {
           rawFiltrado.eventos = rawFiltrado.eventos
-            .filter(e => e.tipo === params.tipo);
+            .filter(e => params.tipos.includes(e.tipo));
         }
 
         // 4. Calcular KPIs del período (rawFiltrado ya está filtrado, sucursal='')
@@ -431,13 +476,54 @@ App.Reportes = (() => {
 
     exportar() { exportar(); },
 
+    toggleTodas(checkbox) {
+      const cbs = document.querySelectorAll('.rp-suc-cb');
+      if (checkbox.checked) {
+        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+      } else {
+        cbs.forEach(cb => { cb.disabled = false; });
+      }
+    },
+
+    onSucursalChange() {
+      const cbs   = document.querySelectorAll('.rp-suc-cb:checked');
+      const todas = document.getElementById('rp-suc-todas');
+      if (todas) todas.checked = cbs.length === 0;
+    },
+
+    toggleTodosTipos(checkbox) {
+      const cbs = document.querySelectorAll('.rp-tipo-cb');
+      if (checkbox.checked) {
+        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+      } else {
+        cbs.forEach(cb => { cb.disabled = false; });
+      }
+    },
+
+    onTipoChange() {
+      const cbs   = document.querySelectorAll('.rp-tipo-cb:checked');
+      const todos = document.getElementById('rp-tipo-todos');
+      if (todos) todos.checked = cbs.length === 0;
+    },
+
     regenerar(id) {
       const h = loadHistory().find(r => r.id === id);
       if (!h) return;
-      const sEl = document.getElementById('rp-sucursal');
+      const todasEl = document.getElementById('rp-suc-todas');
+      const cbs     = document.querySelectorAll('.rp-suc-cb');
+      if (h.sucursal === 'Todas') {
+        if (todasEl) todasEl.checked = true;
+        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+      } else {
+        const seleccionadas = h.sucursal.split(', ');
+        if (todasEl) todasEl.checked = false;
+        cbs.forEach(cb => {
+          cb.disabled = false;
+          cb.checked  = seleccionadas.includes(cb.value);
+        });
+      }
       const dEl = document.getElementById('rp-desde');
       const hEl = document.getElementById('rp-hasta');
-      if (sEl) sEl.value = h.sucursal === 'Todas' ? '' : h.sucursal;
       if (dEl) dEl.value = h.desde === '—' ? '' : h.desde;
       if (hEl) hEl.value = h.hasta === '—' ? '' : h.hasta;
       this.generar();

@@ -881,3 +881,37 @@ tbody tr:hover td { background: var(--gray-100); }
   background: var(--gray-100);
   border-color: var(--blue-mid);
 }
+
+/* ── Multi-select checkboxes (Reportes) ─────────────────────────────────── */
+.multi-select {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+.multi-select-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background .15s;
+  user-select: none;
+}
+.multi-select-item:hover { background: var(--gray-100); }
+.multi-select-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--blue-mid);
+}
+.multi-select-all {
+  font-weight: 600;
+  color: var(--blue-mid);
+}
+.multi-select-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 2px 0;
+}
