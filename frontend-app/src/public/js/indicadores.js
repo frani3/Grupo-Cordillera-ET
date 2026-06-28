@@ -234,6 +234,14 @@ App.Indicadores = (() => {
     return String(v);
   }
 
+  function updateThresholdLabels() {
+    KPIS.forEach(k => {
+      if (k.noThreshold) return;
+      const el = document.getElementById(`thr-${k.id}`);
+      if (el) el.textContent = 'Umbral: ' + formatThreshold(k.id);
+    });
+  }
+
   function updateKpiVisibility(sucursal) {
     KPIS.forEach(k => {
       const card  = document.getElementById(`kpi-card-${k.id}`);
@@ -247,6 +255,17 @@ App.Indicadores = (() => {
         label.textContent = sucursal ? k.labelSucursal : k.label;
       }
     });
+
+    const visiblesMain = KPIS.filter(k =>
+      k.zone === 'main' &&
+      !(k.globalOnly   && sucursal) &&
+      !(k.sucursalOnly && !sucursal)
+    ).length;
+    const gridEl = document.getElementById('kpi-grid-main');
+    if (gridEl) {
+      gridEl.classList.toggle('kpi-grid-3col', visiblesMain <= 3);
+      gridEl.classList.toggle('kpi-grid-4col', visiblesMain >= 4);
+    }
   }
 
   function renderCard(k) {
@@ -324,13 +343,16 @@ App.Indicadores = (() => {
 
   function logThresholdChange(kpiId, valorAntes, valorDespues) {
     try {
-      const kpi     = KPIS.find(k => k.id === kpiId);
+      const kpi      = KPIS.find(k => k.id === kpiId);
+      const kpiLabel = (sucursalFiltro && kpi?.labelSucursal)
+        ? kpi.labelSucursal
+        : (kpi?.label || kpiId);
       const session = App.Auth.getSession() || {};
       const entrada = {
         timestamp:    new Date().toISOString(),
         usuario:      session.username || 'desconocido',
         rol:          session.role     || '—',
-        kpiLabel:     kpi?.label || kpiId,
+        kpiLabel,
         contexto:     sucursalFiltro || 'Global',
         valorAntes,
         valorDespues,
@@ -463,6 +485,7 @@ App.Indicadores = (() => {
       }
 
       loadThresholds();
+      updateThresholdLabels();
       updateKpiVisibility(sucursalFiltro);
       applyValues(computeValues(rawData, sucursalFiltro));
     },

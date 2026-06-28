@@ -615,13 +615,15 @@ tbody tr:hover td { background: var(--gray-100); }
   margin-top: 28px;
 }
 
-/* Tarjetas principales más grandes — siempre 4 columnas */
+/* Tarjetas principales más grandes — columnas dinámicas */
 .kpi-grid-main {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
   margin-bottom: 8px;
 }
+.kpi-grid-main.kpi-grid-3col { grid-template-columns: repeat(3, 1fr); }
+.kpi-grid-main.kpi-grid-4col { grid-template-columns: repeat(4, 1fr); }
 .kpi-grid-main .kpi-value {
   font-size: 36px;
 }
