@@ -10,7 +10,6 @@ App.Reportes = (() => {
 
   let container  = null;
   let lastResult = null; // { params, rawFiltrado, kpis }
-  let _updating  = false;
 
   // ── Lectura de controles ─────────────────────────────────────────────────
   function getSelectedSucursales() {
@@ -367,7 +366,7 @@ App.Reportes = (() => {
           <div class="params-row">
             <div class="form-group">
               <label>Sucursales</label>
-              <div class="multi-select" id="rp-sucursales">
+              <div class="multi-select multi-select-dimmed" id="rp-sucursales">
                 <label class="multi-select-item multi-select-all">
                   <input type="checkbox" id="rp-suc-todas" value=""
                     onchange="App.Reportes.toggleTodas(this)" checked>
@@ -377,14 +376,14 @@ App.Reportes = (() => {
                 ${SUCURSALES.map(s => `
                   <label class="multi-select-item">
                     <input type="checkbox" class="rp-suc-cb" value="${s}"
-                      onchange="App.Reportes.onSucursalChange()" disabled>
+                      onchange="App.Reportes.onSucursalChange()">
                     <span>${s}</span>
                   </label>`).join('')}
               </div>
             </div>
             <div class="form-group">
               <label>Tipos de Evento</label>
-              <div class="multi-select" id="rp-tipos">
+              <div class="multi-select multi-select-dimmed" id="rp-tipos">
                 <label class="multi-select-item multi-select-all">
                   <input type="checkbox" id="rp-tipo-todos" value=""
                     onchange="App.Reportes.toggleTodosTipos(this)" checked>
@@ -394,7 +393,7 @@ App.Reportes = (() => {
                 ${TIPOS.map(t => `
                   <label class="multi-select-item">
                     <input type="checkbox" class="rp-tipo-cb" value="${t}"
-                      onchange="App.Reportes.onTipoChange()" disabled>
+                      onchange="App.Reportes.onTipoChange()">
                     <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
                   </label>`).join('')}
               </div>
@@ -487,53 +486,49 @@ App.Reportes = (() => {
     exportar() { exportar(); },
 
     toggleTodas(checkbox) {
-      if (_updating) return;
-      _updating = true;
-      const cbs = document.querySelectorAll('.rp-suc-cb');
+      const cont = document.getElementById('rp-sucursales');
       if (checkbox.checked) {
-        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+        document.querySelectorAll('.rp-suc-cb').forEach(cb => { cb.checked = false; });
+        cont?.classList.add('multi-select-dimmed');
       } else {
-        cbs.forEach(cb => { cb.disabled = false; });
+        cont?.classList.remove('multi-select-dimmed');
       }
-      _updating = false;
     },
 
     onSucursalChange() {
-      if (_updating) return;
-      _updating = true;
       const marcados = document.querySelectorAll('.rp-suc-cb:checked').length;
       const todas    = document.getElementById('rp-suc-todas');
-      if (marcados === 0 && todas) {
+      const cont     = document.getElementById('rp-sucursales');
+      if (marcados > 0 && todas) {
+        todas.checked = false;
+        cont?.classList.remove('multi-select-dimmed');
+      } else if (marcados === 0 && todas) {
         todas.checked = true;
-        document.querySelectorAll('.rp-suc-cb')
-          .forEach(cb => { cb.disabled = true; });
+        cont?.classList.add('multi-select-dimmed');
       }
-      _updating = false;
     },
 
     toggleTodosTipos(checkbox) {
-      if (_updating) return;
-      _updating = true;
-      const cbs = document.querySelectorAll('.rp-tipo-cb');
+      const cont = document.getElementById('rp-tipos');
       if (checkbox.checked) {
-        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+        document.querySelectorAll('.rp-tipo-cb').forEach(cb => { cb.checked = false; });
+        cont?.classList.add('multi-select-dimmed');
       } else {
-        cbs.forEach(cb => { cb.disabled = false; });
+        cont?.classList.remove('multi-select-dimmed');
       }
-      _updating = false;
     },
 
     onTipoChange() {
-      if (_updating) return;
-      _updating = true;
       const marcados = document.querySelectorAll('.rp-tipo-cb:checked').length;
       const todos    = document.getElementById('rp-tipo-todos');
-      if (marcados === 0 && todos) {
+      const cont     = document.getElementById('rp-tipos');
+      if (marcados > 0 && todos) {
+        todos.checked = false;
+        cont?.classList.remove('multi-select-dimmed');
+      } else if (marcados === 0 && todos) {
         todos.checked = true;
-        document.querySelectorAll('.rp-tipo-cb')
-          .forEach(cb => { cb.disabled = true; });
+        cont?.classList.add('multi-select-dimmed');
       }
-      _updating = false;
     },
 
     regenerar(id) {
@@ -541,15 +536,17 @@ App.Reportes = (() => {
       if (!h) return;
       const todasEl = document.getElementById('rp-suc-todas');
       const cbs     = document.querySelectorAll('.rp-suc-cb');
+      const sucCont = document.getElementById('rp-sucursales');
       if (h.sucursal === 'Todas') {
         if (todasEl) todasEl.checked = true;
-        cbs.forEach(cb => { cb.checked = false; cb.disabled = true; });
+        cbs.forEach(cb => { cb.checked = false; });
+        sucCont?.classList.add('multi-select-dimmed');
       } else {
         const seleccionadas = h.sucursal.split(', ');
         if (todasEl) todasEl.checked = false;
+        sucCont?.classList.remove('multi-select-dimmed');
         cbs.forEach(cb => {
-          cb.disabled = false;
-          cb.checked  = seleccionadas.includes(cb.value);
+          cb.checked = seleccionadas.includes(cb.value);
         });
       }
       const dEl = document.getElementById('rp-desde');

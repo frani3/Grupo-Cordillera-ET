@@ -921,3 +921,6 @@ tbody tr:hover td { background: var(--gray-100); }
   background: var(--gray-200);
   margin: 2px 0;
 }
+.multi-select-dimmed .multi-select-item:not(.multi-select-all) {
+  opacity: 0.4;
+}
