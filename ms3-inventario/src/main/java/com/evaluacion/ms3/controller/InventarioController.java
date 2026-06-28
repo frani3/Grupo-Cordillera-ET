@@ -28,15 +28,37 @@ public class InventarioController {
 
     // POST /api/inventario/item — Script 3 envia items de inventario
     @PostMapping("/item")
-    public ResponseEntity<ItemInventario> recibirItem(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> recibirItem(@RequestBody Map<String, Object> payload) {
+        String itemId   = (String) payload.get("item_id");
+        String nombre   = (String) payload.get("nombre");
+        String sucursal = (String) payload.get("sucursal");
+        Object cantidad = payload.get("cantidad");
+        Object precio   = payload.get("precio_unitario");
+
+        if (itemId == null || itemId.isBlank()
+         || nombre == null || nombre.isBlank()
+         || sucursal == null || sucursal.isBlank()
+         || cantidad == null || precio == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Campos obligatorios faltantes",
+                                 "requeridos", "item_id, nombre, sucursal, cantidad, precio_unitario"));
+        }
+
+        int cantidadVal = ((Number) cantidad).intValue();
+        long precioVal  = ((Number) precio).longValue();
+        if (cantidadVal < 0 || precioVal < 0) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Valores inválidos: cantidad y precio deben ser >= 0"));
+        }
+
         ItemInventario item = new ItemInventario(
                 null,
-                (String) payload.getOrDefault("item_id", "ITEM-000"),
+                itemId,
                 (String) payload.getOrDefault("categoria", "general"),
-                (String) payload.getOrDefault("nombre", "item"),
-                ((Number) payload.getOrDefault("cantidad", 0)).intValue(),
-                ((Number) payload.getOrDefault("precio_unitario", 0)).longValue(),
-                (String) payload.getOrDefault("sucursal", "central"),
+                nombre,
+                cantidadVal,
+                precioVal,
+                sucursal,
                 parseFecha(payload.get("fecha"))
         );
         return ResponseEntity.ok(repo.save(item));

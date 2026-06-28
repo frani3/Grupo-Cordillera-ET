@@ -28,14 +28,36 @@ public class EmpleadoController {
 
     // POST /api/empleados/registro — Script 4 envia registros de turno
     @PostMapping("/registro")
-    public ResponseEntity<RegistroEmpleado> recibirRegistro(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> recibirRegistro(@RequestBody Map<String, Object> payload) {
+        String empleadoId = (String) payload.get("empleado_id");
+        String nombre     = (String) payload.get("nombre");
+        String sucursal   = (String) payload.get("sucursal");
+        String turno      = (String) payload.get("turno");
+        Object horas      = payload.get("horas_trabajadas");
+
+        if (empleadoId == null || empleadoId.isBlank()
+         || nombre == null || nombre.isBlank()
+         || sucursal == null || sucursal.isBlank()
+         || turno == null || turno.isBlank()
+         || horas == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Campos obligatorios faltantes",
+                                 "requeridos", "empleado_id, nombre, sucursal, turno, horas_trabajadas"));
+        }
+
+        double horasVal = ((Number) horas).doubleValue();
+        if (horasVal < 0 || horasVal > 24) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Horas trabajadas inválidas: debe estar entre 0 y 24"));
+        }
+
         RegistroEmpleado r = new RegistroEmpleado(
                 null,
-                (String) payload.getOrDefault("empleado_id", "EMP-000"),
-                (String) payload.getOrDefault("nombre", "Empleado"),
-                (String) payload.getOrDefault("sucursal", "central"),
-                (String) payload.getOrDefault("turno", "manana"),
-                ((Number) payload.getOrDefault("horas_trabajadas", 0.0)).doubleValue(),
+                empleadoId,
+                nombre,
+                sucursal,
+                turno,
+                horasVal,
                 parseFecha(payload.get("fecha"))
         );
         return ResponseEntity.ok(repo.save(r));

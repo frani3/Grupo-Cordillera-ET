@@ -28,14 +28,34 @@ public class ReporteController {
 
     // POST /api/reportes/evento — Script 5 envia eventos financieros
     @PostMapping("/evento")
-    public ResponseEntity<EventoReporte> recibirEvento(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> recibirEvento(@RequestBody Map<String, Object> payload) {
+        String reporteId = (String) payload.get("reporte_id");
+        String tipo      = (String) payload.get("tipo");
+        String sucursal  = (String) payload.get("sucursal");
+        Object monto     = payload.get("monto");
+
+        if (reporteId == null || reporteId.isBlank()
+         || tipo == null || tipo.isBlank()
+         || sucursal == null || sucursal.isBlank()
+         || monto == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Campos obligatorios faltantes",
+                                 "requeridos", "reporte_id, tipo, sucursal, monto"));
+        }
+
+        long montoVal = ((Number) monto).longValue();
+        if (montoVal < 0) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Monto inválido: debe ser >= 0"));
+        }
+
         EventoReporte e = new EventoReporte(
                 null,
-                (String) payload.getOrDefault("reporte_id", "REP-000"),
-                (String) payload.getOrDefault("tipo", "cierre"),
-                (String) payload.getOrDefault("descripcion", "evento financiero"),
-                ((Number) payload.getOrDefault("monto", 0)).longValue(),
-                (String) payload.getOrDefault("sucursal", "central"),
+                reporteId,
+                tipo,
+                (String) payload.getOrDefault("descripcion", tipo),
+                montoVal,
+                sucursal,
                 parseFecha(payload.get("fecha"))
         );
         return ResponseEntity.ok(repo.save(e));
