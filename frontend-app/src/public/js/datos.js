@@ -62,6 +62,7 @@ App.Datos = (() => {
   let filteredData  = [];
   let currentPage   = 1;
   let container     = null;
+  let searchQuery   = '';
 
   function fmtDate(v) {
     if (!v) return '—';
@@ -121,6 +122,13 @@ function filterControls(tab) {
       ${extra}
       <button onclick="App.Datos.applyFilters()" class="btn btn-primary btn-sm">Filtrar</button>
       <button onclick="App.Datos.clearFilters()" class="btn btn-secondary btn-sm">Limpiar</button>
+      <input
+        type="text"
+        id="datos-search"
+        class="datos-search-input"
+        placeholder="Buscar en resultados..."
+        oninput="App.Datos.search()"
+      />
     `;
   }
 
@@ -158,6 +166,14 @@ function filterControls(tab) {
     } else if (activeTab === 'eventos') {
       const t = document.getElementById('fc-tipo')?.value;
       if (t) result = result.filter(r => r.tipo === t);
+    }
+
+    if (searchQuery) {
+      result = result.filter(row =>
+        Object.values(row).some(v =>
+          String(v ?? '').toLowerCase().includes(searchQuery)
+        )
+      );
     }
 
     return result;
@@ -254,7 +270,8 @@ function filterControls(tab) {
     },
 
     async switchTab(tab) {
-      activeTab = tab;
+      activeTab   = tab;
+      searchQuery = '';
       document.querySelectorAll('.tab-btn').forEach(b => {
         const t = TABS.find(t => t.label === b.textContent);
         b.classList.toggle('active', t?.id === tab);
@@ -270,8 +287,9 @@ function filterControls(tab) {
     },
 
     clearFilters() {
-      ['fc-sucursal','fc-desde','fc-hasta','fc-canal','fc-categoria','fc-turno','fc-tipo']
+      ['fc-sucursal','fc-desde','fc-hasta','fc-canal','fc-categoria','fc-turno','fc-tipo','datos-search']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      searchQuery  = '';
       currentPage  = 1;
       filteredData = [...allData];
       renderTable(filteredData);
@@ -281,6 +299,13 @@ function filterControls(tab) {
       const total = Math.ceil(filteredData.length / PAGE_SIZE) || 1;
       if (p < 1 || p > total) return;
       currentPage = p;
+      renderTable(filteredData);
+    },
+
+    search() {
+      searchQuery  = document.getElementById('datos-search')?.value.toLowerCase().trim() || '';
+      currentPage  = 1;
+      filteredData = applyFilters();
       renderTable(filteredData);
     },
 

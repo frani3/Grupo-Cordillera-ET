@@ -4,67 +4,74 @@ App.Indicadores = (() => {
   const THRESHOLD_KEY = 'gc_kpi_thresholds';
 
   const DEFAULTS = {
-    ventasTotales:  5000000,
-    ticketPromedio:   50000,
-    pctPresencial:       50,
-    pctOnline:           30,
-    itemsInventario:     50,
-    promedioHoras:        5,
-    montoEventos:  3000000,
+    ventasTotales:    5000000,
+    ventasPresencial: 2500000,
+    ventasOnline:     2500000,
+    ticketPromedio:     50000,
+    itemsInventario:       50,
+    promedioHoras:          5,
+    montoEventos:     3000000,
   };
 
   const KPIS = [
+    // ── Zona main ──────────────────────────────────────────────────────────
     {
       id:      'ventasTotales',
       zone:    'main',
       label:   'Ventas Totales',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext: data => `${data.totalTransacciones} transacciones`,
+      subtext: (data, sucursal) => sucursal
+        ? `${data.totalTransacciones} transacciones en esta sucursal`
+        : `${data.totalTransacciones} transacciones totales`,
     },
     {
-      id:      'ticketPromedio',
-      zone:    'main',
-      label:   'Ticket Promedio',
-      format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext: () => 'Por transacción',
-    },
-    {
-      id:         'pctPresencial',
+      id:         'ventasPresencial',
       zone:       'main',
+      globalOnly: true,
       label:      'Ventas Presenciales',
-      format:     v => v + '%',
+      format:     v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext:    data => `${data.transaccionesTienda} transacciones en tienda`,
     },
     {
-      id:         'pctOnline',
+      id:         'ventasOnline',
       zone:       'main',
-      globalOnly: true,   // se oculta al filtrar por sucursal
+      globalOnly: true,
       label:      'Ventas Online',
-      format:     v => v + '%',
+      format:     v => '$' + Math.round(v).toLocaleString('es-CL'),
       subtext:    data => `${data.transaccionesOnline} transacciones online`,
     },
     {
+      id:           'ticketPromedio',
+      zone:         'main',
+      sucursalOnly: true,
+      label:        'Ticket Promedio',
+      format:       v => '$' + Math.round(v).toLocaleString('es-CL'),
+      subtext:      () => 'Valor promedio por transacción',
+    },
+
+    // ── Zona ops ───────────────────────────────────────────────────────────
+    {
       id:      'itemsInventario',
       zone:    'ops',
-      label:   'Items en Inventario',
+      label:   'Productos en Stock',
       format:  v => v.toLocaleString('es-CL'),
       subtext: data => data.stockCritico > 0
-        ? `⚠ ${data.stockCritico} con stock crítico (<10 unidades)`
-        : '✓ Sin stock crítico',
+        ? `⚠ ${data.stockCritico} productos con stock crítico (menos de 10 unidades)`
+        : '✓ Todos los productos sobre stock mínimo',
     },
     {
       id:      'promedioHoras',
       zone:    'ops',
-      label:   'Horas Prom. por Empleado',
+      label:   'Horas Trabajadas Prom.',
       format:  v => v.toFixed(1) + ' hrs',
-      subtext: data => `${data.totalEventos} registros de turno`,
+      subtext: data => `Promedio por empleado — ${data.totalEmpleados} registros de turno`,
     },
     {
       id:      'montoEventos',
       zone:    'ops',
-      label:   'Movimientos Financieros',
+      label:   'Ajustes Financieros',
       format:  v => '$' + Math.round(v).toLocaleString('es-CL'),
-      subtext: data => `${data.totalEventos} eventos (cierres, devoluciones, descuentos)`,
+      subtext: data => `${data.totalEventos} movimientos — cierres, devoluciones y descuentos`,
     },
   ];
 
@@ -73,13 +80,13 @@ App.Indicadores = (() => {
     'Pudahuel', 'Nunoa', 'Vitacura', 'La Florida', 'Quilicura', 'San Bernardo',
   ];
 
-  let thresholds     = {};
-  let currentValues  = {};
-  let container      = null;
-  let configTarget   = null;
+  let thresholds      = {};
+  let currentValues   = {};
+  let container       = null;
+  let configTarget    = null;
   let refreshInterval = null;
-  let rawData        = { ventas: [], inventario: [], empleados: [], eventos: [] };
-  let sucursalFiltro = '';
+  let rawData         = { ventas: [], inventario: [], empleados: [], eventos: [] };
+  let sucursalFiltro  = '';
 
   function loadThresholds() {
     try {
@@ -121,16 +128,19 @@ App.Indicadores = (() => {
     const transaccionesTienda = v.filter(r => r.canal === 'Tienda Física').length;
     const totalTransacciones  = v.length;
     const ticketPromedio      = totalTransacciones > 0 ? ventasTotales / totalTransacciones : 0;
+    const ventasPresencial    = v
+      .filter(r => r.canal === 'Tienda Física')
+      .reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
+    const ventasOnline        = v
+      .filter(r => r.canal === 'Online')
+      .reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
     const itemsInventario     = i.length;
     const stockCritico        = i.filter(r => (parseInt(r.cantidad) || 0) < 10).length;
+    const totalEmpleados      = e.length;
     const totalHoras          = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
-    const promedioHoras       = e.length > 0 ? totalHoras / e.length : 0;
+    const promedioHoras       = totalEmpleados > 0 ? totalHoras / totalEmpleados : 0;
     const montoEventos        = ev.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
     const totalEventos        = ev.length;
-    const pctOnline           = totalTransacciones > 0
-      ? Math.round((transaccionesOnline / totalTransacciones) * 100) : 0;
-    const pctPresencial       = totalTransacciones > 0
-      ? Math.round((transaccionesTienda / totalTransacciones) * 100) : 0;
 
     return {
       ventasTotales,
@@ -138,13 +148,14 @@ App.Indicadores = (() => {
       ticketPromedio,
       transaccionesOnline,
       transaccionesTienda,
+      ventasPresencial,
+      ventasOnline,
       itemsInventario,
       stockCritico,
+      totalEmpleados,
       promedioHoras,
       montoEventos,
       totalEventos,
-      pctOnline,
-      pctPresencial,
     };
   }
 
@@ -155,17 +166,22 @@ App.Indicadores = (() => {
 
   function formatThreshold(id) {
     const v = thresholds[id];
-    if (id === 'ventasTotales' || id === 'ticketPromedio' || id === 'montoEventos') {
+    if (['ventasTotales','ticketPromedio','ventasPresencial','ventasOnline','montoEventos'].includes(id)) {
       return '$' + Math.round(v).toLocaleString('es-CL');
     }
-    if (id === 'pctOnline' || id === 'pctPresencial') return v + '%';
     if (id === 'promedioHoras') return v + ' hrs';
     return String(v);
   }
 
-  function syncOnlineCardVisibility() {
-    const card = document.getElementById('kpi-card-pctOnline');
-    if (card) card.classList.toggle('hidden', !!sucursalFiltro);
+  function updateKpiVisibility(sucursal) {
+    KPIS.forEach(k => {
+      const card = document.getElementById(`kpi-card-${k.id}`);
+      if (!card) return;
+      let visible = true;
+      if (k.globalOnly   && sucursal)  visible = false;
+      if (k.sucursalOnly && !sucursal) visible = false;
+      card.classList.toggle('hidden', !visible);
+    });
   }
 
   function renderCard(k) {
@@ -192,17 +208,20 @@ App.Indicadores = (() => {
 
     container.innerHTML = `
       <div class="page-header">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="kpi-title-group">
           <h2>Panel de Indicadores</h2>
-          <span id="kpi-sucursal-badge" class="sucursal-badge hidden"></span>
+          <div class="kpi-context-bar">
+            <span class="kpi-context-label">Mostrando:</span>
+            <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
+              <option value="">Todas las sucursales</option>
+              ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
-            <option value="">Todas las sucursales</option>
-            ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
-          </select>
-          <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
-        </div>
+        <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
+      </div>
+      <div id="kpi-banner" class="kpi-banner kpi-banner-total">
+        <span id="kpi-banner-text">📊 Vista consolidada — todas las sucursales</span>
       </div>
       <div class="kpi-section-title">Métricas de Venta</div>
       <div class="kpi-grid kpi-grid-main" id="kpi-grid-main">
@@ -232,13 +251,13 @@ App.Indicadores = (() => {
     currentValues = values;
     KPIS.forEach(k => {
       const val    = values[k.id] ?? 0;
-      const ok     = val >= thresholds[k.id];
+      const ok     = val >= (thresholds[k.id] ?? 0);
       const valEl  = document.getElementById(`val-${k.id}`);
       const subEl  = document.getElementById(`sub-${k.id}`);
       const semEl  = document.getElementById(`sem-${k.id}`);
       const cardEl = document.getElementById(`kpi-card-${k.id}`);
-      if (valEl)  valEl.textContent = k.format(val);
-      if (subEl && k.subtext) subEl.textContent = k.subtext(values);
+      if (valEl) valEl.textContent = k.format(val);
+      if (subEl && k.subtext) subEl.textContent = k.subtext(values, sucursalFiltro);
       if (semEl) {
         semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
         semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
@@ -273,6 +292,7 @@ App.Indicadores = (() => {
       try {
         rawData = await fetchAllRaw();
         applyValues(computeValues(rawData, sucursalFiltro));
+        updateKpiVisibility(sucursalFiltro);
       } catch (err) {
         console.error('Error indicadores:', err);
       }
@@ -280,17 +300,24 @@ App.Indicadores = (() => {
 
     filterSucursal() {
       sucursalFiltro = document.getElementById('kpi-sucursal')?.value || '';
-      const badge = document.getElementById('kpi-sucursal-badge');
-      if (badge) {
+
+      const sel = document.getElementById('kpi-sucursal');
+      if (sel) sel.classList.toggle('sucursal-activa', !!sucursalFiltro);
+
+      const banner     = document.getElementById('kpi-banner');
+      const bannerText = document.getElementById('kpi-banner-text');
+      if (banner && bannerText) {
         if (sucursalFiltro) {
-          badge.textContent = '📍 ' + sucursalFiltro;
-          badge.classList.remove('hidden');
+          banner.className       = 'kpi-banner kpi-banner-sucursal';
+          bannerText.textContent = '📍 Sucursal: ' + sucursalFiltro;
         } else {
-          badge.classList.add('hidden');
+          banner.className       = 'kpi-banner kpi-banner-total';
+          bannerText.textContent = '📊 Vista consolidada — todas las sucursales';
         }
       }
-      syncOnlineCardVisibility();
+
       applyValues(computeValues(rawData, sucursalFiltro));
+      updateKpiVisibility(sucursalFiltro);
     },
 
     openConfig(kpiId) {

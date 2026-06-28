@@ -597,10 +597,10 @@ tbody tr:hover td { background: var(--gray-100); }
   margin-top: 28px;
 }
 
-/* Tarjetas principales más grandes (auto-fit: 3 cuando pctOnline oculto, 4 cuando visible) */
+/* Tarjetas principales más grandes — siempre 4 columnas */
 .kpi-grid-main {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
   margin-bottom: 8px;
 }
@@ -635,13 +635,75 @@ tbody tr:hover td { background: var(--gray-100); }
   vertical-align: middle;
 }
 
-/* Selector de sucursal en header */
+/* Título + selector de sucursal en indicadores */
+.kpi-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kpi-context-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kpi-context-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 #kpi-sucursal {
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-sm);
   color: var(--text);
   background: var(--white);
   cursor: pointer;
+  transition: var(--transition);
+}
+#kpi-sucursal.sucursal-activa {
+  border-color: var(--blue-mid);
+  background: #eff6ff;
+  color: var(--blue-mid);
+  font-weight: 600;
+}
+
+/* Banner de contexto */
+.kpi-banner {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+.kpi-banner-total {
+  background: var(--gray-100);
+  color: var(--text-muted);
+  border: 1px solid var(--gray-200);
+}
+.kpi-banner-sucursal {
+  background: #eff6ff;
+  color: var(--blue-mid);
+  border: 1px solid #bfdbfe;
+}
+
+/* Barra de búsqueda en Datos Crudos */
+.datos-search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 7px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--white);
+}
+.datos-search-input:focus {
+  outline: none;
+  border-color: var(--blue-mid);
+  box-shadow: 0 0 0 2px rgba(37,99,168,.15);
 }
