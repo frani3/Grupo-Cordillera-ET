@@ -12,7 +12,7 @@ public class PosTransaction {
     private String sucursal;
     private String cajaId;
     private LocalDate fecha;
-    private Double montoTotal;
+    private Long montoTotal;
     private String metodoPago;
     private String vendedorId;
     private String status;

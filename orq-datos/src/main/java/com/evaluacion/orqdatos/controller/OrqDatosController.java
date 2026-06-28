@@ -2,6 +2,8 @@ package com.evaluacion.orqdatos.controller;
 
 import com.evaluacion.orqdatos.model.DatoConsolidado;
 import com.evaluacion.orqdatos.repository.DatoConsolidadoRepository;
+import com.evaluacion.orqdatos.strategy.ProcessingStrategy;
+import com.evaluacion.orqdatos.strategy.StrategyFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -24,13 +26,16 @@ public class OrqDatosController {
     private final DatoConsolidadoRepository consolidadoRepo;
     private final String ms1Url;
     private final String ms2Url;
+    private final StrategyFactory strategyFactory;
 
     public OrqDatosController(DatoConsolidadoRepository consolidadoRepo,
                               @Value("${data.ms.url}") String ms1Url,
-                              @Value("${data.ms2.url}") String ms2Url) {
-        this.consolidadoRepo = consolidadoRepo;
-        this.ms1Url = ms1Url;
-        this.ms2Url = ms2Url;
+                              @Value("${data.ms2.url}") String ms2Url,
+                              StrategyFactory strategyFactory) {
+        this.consolidadoRepo  = consolidadoRepo;
+        this.ms1Url           = ms1Url;
+        this.ms2Url           = ms2Url;
+        this.strategyFactory  = strategyFactory;
     }
 
     // GET /api/datos/consolidado?strategy=batch|stream|cache — compatible con orq-service
@@ -44,24 +49,29 @@ public class OrqDatosController {
                 .mapToDouble(t -> ((Number) t.getOrDefault("montoTotal", 0)).doubleValue())
                 .sum();
 
-        String resultado = switch (strategy.toLowerCase()) {
-            case "stream" -> "STREAM[%s]: %d transacciones en vivo".formatted(id, transacciones.size());
-            case "cache"  -> "CACHE[%s]: %d registros desde BD DATOS".formatted(id, transacciones.size());
-            default       -> "BATCH[%s]: %d transacciones | total=$%.2f".formatted(id, transacciones.size(), totalMonto);
-        };
+        // PATRÓN STRATEGY: seleccionar e invocar la estrategia correcta
+        ProcessingStrategy processingStrategy = strategyFactory.getStrategy(strategy);
+        Map<String, Object> estrategiaResult  = processingStrategy.procesar(id, transacciones, totalMonto);
+
+        String resultado = (String) estrategiaResult.get("resultado");
 
         // Persistir snapshot en BD DATOS
-        consolidadoRepo.save(new DatoConsolidado(id, transacciones.size(), totalMonto, strategy, resultado));
+        consolidadoRepo.save(new DatoConsolidado(
+                id, transacciones.size(), totalMonto,
+                processingStrategy.getNombre(), resultado));
 
-        return ResponseEntity.ok(Map.of(
-                "status", "ok",
-                "requestId", id,
-                "estrategia", strategy,
-                "totalTransacciones", transacciones.size(),
-                "totalMonto", totalMonto,
-                "resultado", resultado,
-                "timestamp", Instant.now().toString()
-        ));
+        // Respuesta base + campos extra de la estrategia
+        Map<String, Object> response = new HashMap<>();
+        response.put("status",             "ok");
+        response.put("requestId",          id);
+        response.put("estrategia",         processingStrategy.getNombre());
+        response.put("totalTransacciones", transacciones.size());
+        response.put("totalMonto",         (long) totalMonto);
+        response.put("resultado",          resultado);
+        response.put("timestamp",          Instant.now().toString());
+        response.putAll(estrategiaResult);
+
+        return ResponseEntity.ok(response);
     }
 
     // GET /api/datos/ventas — lista cruda de MS1 + MS2 (retrocompatibilidad con orq-service)

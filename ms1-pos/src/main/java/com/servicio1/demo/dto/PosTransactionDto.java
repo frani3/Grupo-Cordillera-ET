@@ -9,7 +9,7 @@ public class PosTransactionDto {
     private String sucursal;
     private String caja_id;
     private String fecha_hora;
-    private Double monto_total;
+    private Long monto_total;
     private String metodo_pago;
     private String vendedor_id;
     private List<PosProductDto> productos;

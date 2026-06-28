@@ -15,7 +15,7 @@ public class OnlineVenta {
     private String emailCliente;
     private String direccionEnvio;
     private LocalDate fecha;
-    private Double montoTotal;
+    private Long montoTotal;
     private String metodoPago;
     private String status;
     private LocalDateTime createdAt;

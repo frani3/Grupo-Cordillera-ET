@@ -8,7 +8,7 @@ public class EventoReporte {
     private String reporteId;
     private String tipo;
     private String descripcion;
-    private Double monto;
+    private Long monto;
     private String sucursal;
     private LocalDate fecha;
     private LocalDateTime createdAt;
@@ -16,7 +16,7 @@ public class EventoReporte {
     public EventoReporte() {}
 
     public EventoReporte(Long id, String reporteId, String tipo, String descripcion,
-                         Double monto, String sucursal, LocalDate fecha) {
+                         Long monto, String sucursal, LocalDate fecha) {
         this.id = id;
         this.reporteId = reporteId;
         this.tipo = tipo;
@@ -32,7 +32,7 @@ public class EventoReporte {
     public String getReporteId() { return reporteId; }
     public String getTipo() { return tipo; }
     public String getDescripcion() { return descripcion; }
-    public Double getMonto() { return monto; }
+    public Long getMonto() { return monto; }
     public String getSucursal() { return sucursal; }
     public LocalDate getFecha() { return fecha; }
     public LocalDateTime getCreatedAt() { return createdAt; }

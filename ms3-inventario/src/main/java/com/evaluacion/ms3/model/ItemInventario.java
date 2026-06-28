@@ -9,7 +9,7 @@ public class ItemInventario {
     private String categoria;
     private String nombre;
     private Integer cantidad;
-    private Double precioUnitario;
+    private Long precioUnitario;
     private String sucursal;
     private LocalDate fecha;
     private LocalDateTime createdAt;
@@ -17,7 +17,7 @@ public class ItemInventario {
     public ItemInventario() {}
 
     public ItemInventario(Long id, String itemId, String categoria, String nombre,
-                          Integer cantidad, Double precioUnitario, String sucursal,
+                          Integer cantidad, Long precioUnitario, String sucursal,
                           LocalDate fecha) {
         this.id = id;
         this.itemId = itemId;
@@ -36,7 +36,7 @@ public class ItemInventario {
     public String getCategoria() { return categoria; }
     public String getNombre() { return nombre; }
     public Integer getCantidad() { return cantidad; }
-    public Double getPrecioUnitario() { return precioUnitario; }
+    public Long getPrecioUnitario() { return precioUnitario; }
     public String getSucursal() { return sucursal; }
     public LocalDate getFecha() { return fecha; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -8,7 +8,7 @@ public class OnlineVentaDto {
     // Campos comunes con MS1
     private String trx_id;
     private String fecha_hora;
-    private Double monto_total;
+    private Long monto_total;
     private String metodo_pago;
     private List<OnlineProductoDto> productos;
 

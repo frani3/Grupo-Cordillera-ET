@@ -35,7 +35,7 @@ public class InventarioController {
                 (String) payload.getOrDefault("categoria", "general"),
                 (String) payload.getOrDefault("nombre", "item"),
                 ((Number) payload.getOrDefault("cantidad", 0)).intValue(),
-                ((Number) payload.getOrDefault("precio_unitario", 0.0)).doubleValue(),
+                ((Number) payload.getOrDefault("precio_unitario", 0)).longValue(),
                 (String) payload.getOrDefault("sucursal", "central"),
                 parseFecha(payload.get("fecha"))
         );

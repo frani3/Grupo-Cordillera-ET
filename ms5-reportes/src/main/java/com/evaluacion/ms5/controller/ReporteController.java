@@ -34,7 +34,7 @@ public class ReporteController {
                 (String) payload.getOrDefault("reporte_id", "REP-000"),
                 (String) payload.getOrDefault("tipo", "cierre"),
                 (String) payload.getOrDefault("descripcion", "evento financiero"),
-                ((Number) payload.getOrDefault("monto", 0.0)).doubleValue(),
+                ((Number) payload.getOrDefault("monto", 0)).longValue(),
                 (String) payload.getOrDefault("sucursal", "central"),
                 parseFecha(payload.get("fecha"))
         );
