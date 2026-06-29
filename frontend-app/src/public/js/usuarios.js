@@ -90,10 +90,15 @@ App.Usuarios = (() => {
           </div>
           <div class="form-group">
             <label>Rol</label>
-            <select id="u-role">
-              <option value="USER">Usuario</option>
-              <option value="ADMIN">Administrador</option>
-            </select>
+            ${UI.dropdown({
+              id: 'u-role',
+              placeholder: 'Seleccionar rol',
+              options: [
+                { value: 'USER',  label: 'Usuario' },
+                { value: 'ADMIN', label: 'Administrador' },
+              ],
+              value: 'USER',
+            })}
           </div>
           <button onclick="App.Usuarios.crear()" class="btn btn-primary btn-full">
             ${App.Icons?.plus || '+'} Crear usuario
@@ -142,6 +147,10 @@ App.Usuarios = (() => {
       ['u-username', 'u-email', 'u-password'].forEach(id => {
         document.getElementById(id).value = '';
       });
+      const roleLabel = document.getElementById('dd-label-u-role');
+      if (roleLabel) roleLabel.textContent = 'Usuario';
+      const roleHidden = document.getElementById('u-role');
+      if (roleHidden) roleHidden.value = 'USER';
       msgEl.innerHTML = '<p class="success-msg">Usuario creado (solo en memoria de esta sesión).</p>';
       setTimeout(() => { if (msgEl) msgEl.innerHTML = ''; }, 3500);
       renderTabla();

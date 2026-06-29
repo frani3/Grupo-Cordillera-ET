@@ -349,15 +349,19 @@ App.Indicadores = (() => {
       <!-- Tooltip flotante -->
       <div id="kpi-tooltip" class="kpi-tooltip hidden"></div>
       <!-- Overlay de configuración -->
-      <div id="config-overlay" class="config-overlay hidden" onclick="if(event.target===this)App.Indicadores.closeConfig()">
+      <div id="config-overlay" class="config-overlay hidden"
+        onclick="if(event.target===this)App.Indicadores.closeConfig()">
         <div class="config-box">
-          <h3 id="config-title">Configurar umbral</h3>
-          <small id="config-ref" style="display:block;color:var(--text-muted);font-size:11px;margin-bottom:12px;"></small>
-          <label>Valor mínimo aceptable</label>
+          <span id="config-title" class="config-box-title">Configurar umbral</span>
+          <span id="config-context"></span>
+          <span id="config-ref"></span>
+          <label for="config-input">Valor mínimo aceptable</label>
           <input type="number" id="config-input" min="0" step="1">
           <div class="config-actions">
-            <button onclick="App.Indicadores.closeConfig()" class="btn btn-secondary btn-sm">Cancelar</button>
-            <button onclick="App.Indicadores.saveConfig()" class="btn btn-primary btn-sm">Guardar</button>
+            <button onclick="App.Indicadores.closeConfig()"
+              class="btn btn-secondary btn-sm">Cancelar</button>
+            <button onclick="App.Indicadores.saveConfig()"
+              class="btn btn-primary btn-sm">Guardar</button>
           </div>
         </div>
       </div>
