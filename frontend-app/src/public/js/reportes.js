@@ -359,14 +359,23 @@ App.Reportes = (() => {
         <h2>Reportes Ejecutivos</h2>
       </div>
 
-      <!-- Barra superior con pills y botones -->
-      <div class="report-filter-bar">
-        <div class="report-active-pills" id="report-active-pills">
-          <span class="report-pill-placeholder text-muted small">
-            Sin filtros aplicados — mostrando todos los datos
-          </span>
+      <!-- Cuadro resumen de filtros -->
+      <div class="report-summary-card" id="report-summary-card">
+        <div class="rsc-field">
+          <span class="rsc-label">Sucursales</span>
+          <span class="rsc-value" id="rsc-sucursales">Todas las sucursales</span>
         </div>
-        <div style="display:flex; gap:8px; flex-shrink:0">
+        <div class="rsc-sep"></div>
+        <div class="rsc-field">
+          <span class="rsc-label">Período</span>
+          <span class="rsc-value" id="rsc-fechas">Sin filtro de fecha</span>
+        </div>
+        <div class="rsc-sep"></div>
+        <div class="rsc-field">
+          <span class="rsc-label">Tipos de evento</span>
+          <span class="rsc-value" id="rsc-tipos">Todos los tipos</span>
+        </div>
+        <div class="rsc-actions">
           <button onclick="App.Reportes.openFilterPanel()" class="btn btn-secondary btn-sm">
             ${App.Icons?.filter || `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3h11M3 6.5h7M5 10h3"/></svg>`}
             Filtros
@@ -463,6 +472,30 @@ App.Reportes = (() => {
         <div id="rp-historial"></div>
       </div>`;
     renderHistorial();
+    updateSummary();
+  }
+
+  // ── Summary card ─────────────────────────────────────────────────────────
+  function updateSummary() {
+    const sucursales = getSelectedSucursales();
+    const tipos      = getSelectedTipos();
+    const desde      = document.getElementById('rp-desde')?.value || '';
+    const hasta      = document.getElementById('rp-hasta')?.value || '';
+
+    const sucEl = document.getElementById('rsc-sucursales');
+    if (sucEl) sucEl.textContent = sucursales.length > 0
+      ? (sucursales.length === 1 ? sucursales[0] : `${sucursales.length} sucursales`)
+      : 'Todas las sucursales';
+
+    const fechEl = document.getElementById('rsc-fechas');
+    if (fechEl) fechEl.textContent = (desde || hasta)
+      ? `${desde || '…'} → ${hasta || '…'}`
+      : 'Sin filtro de fecha';
+
+    const tipEl = document.getElementById('rsc-tipos');
+    if (tipEl) tipEl.textContent = tipos.length > 0
+      ? (tipos.length === 1 ? tipos[0].replace(/-/g, ' ') : `${tipos.length} tipos`)
+      : 'Todos los tipos';
   }
 
   // ── API pública ──────────────────────────────────────────────────────────
@@ -603,23 +636,7 @@ App.Reportes = (() => {
 
     applyAndClose() {
       this.closeFilterPanel();
-      this.renderActivePills();
-    },
-
-    renderActivePills() {
-      const el = document.getElementById('report-active-pills');
-      if (!el) return;
-      const sucursales = getSelectedSucursales();
-      const tipos      = getSelectedTipos();
-      const desde      = document.getElementById('rp-desde')?.value;
-      const hasta      = document.getElementById('rp-hasta')?.value;
-      const pills = [];
-      if (sucursales.length > 0) pills.push(`<span class="filter-badge">${sucursales.length === 1 ? sucursales[0] : sucursales.length + ' sucursales'}</span>`);
-      if (tipos.length > 0)      pills.push(`<span class="filter-badge">${tipos.length === 1 ? tipos[0] : tipos.length + ' tipos'}</span>`);
-      if (desde || hasta)        pills.push(`<span class="filter-badge">${desde || '…'} → ${hasta || '…'}</span>`);
-      el.innerHTML = pills.length > 0
-        ? pills.join('')
-        : '<span class="report-pill-placeholder text-muted small">Sin filtros aplicados</span>';
+      updateSummary();
     },
 
     resetFilter(section) {
@@ -636,13 +653,14 @@ App.Reportes = (() => {
       } else if (section === 'fechas') {
         UI.clearDate?.('rp-dates', 'rp-desde', 'rp-hasta');
       }
+      updateSummary();
     },
 
     resetAllFilters() {
       this.resetFilter('sucursales');
       this.resetFilter('tipos');
       this.resetFilter('fechas');
-      this.renderActivePills();
+      updateSummary();
     },
 
     clearHistorial() {

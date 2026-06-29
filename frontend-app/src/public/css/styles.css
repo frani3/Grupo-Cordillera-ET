@@ -695,6 +695,14 @@ table { border-collapse: collapse; width: 100%; }
   border-top: 1px solid var(--gray-100);
   padding: 10px 20px 12px;
 }
+.filter-search-row .ui-dropdown {
+  flex-shrink: 0;
+  min-width: 140px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+}
+.filter-search-row .ui-dd-menu { min-width: 160px; }
 .search-icon {
   font-size: 14px;
   color: var(--text-muted);
@@ -1049,18 +1057,18 @@ tbody tr:hover td { background: var(--accent-light); }
 }
 .datos-search-input {
   flex: 1;
-  padding: 7px 12px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-pill);
   font-size: 13px;
   color: var(--text);
   background: var(--white);
   transition: var(--transition);
+  outline: none;
 }
 .datos-search-input:focus {
-  outline: none;
-  border-color: var(--blue-mid);
-  box-shadow: 0 0 0 2px rgba(37,99,168,.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,246,.1);
 }
 
 /* ── 24. Badges ──────────────────────────────────────────────────────────── */
@@ -1659,3 +1667,55 @@ tbody tr:hover td { background: var(--accent-light); }
   border-radius: var(--radius-sm);
 }
 .rfp-section .ui-cal { position: static; box-shadow: none; border: 1.5px solid var(--gray-200); margin-top: 10px; animation: none; }
+
+/* ── Report Summary Card ─────────────────────────────────────────────────── */
+.report-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 24px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0,0,0,.04);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.rsc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 20px;
+  flex: 1;
+  min-width: 120px;
+}
+.rsc-field:first-child { padding-left: 0; }
+.rsc-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-muted);
+}
+.rsc-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+.rsc-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--gray-200);
+  flex-shrink: 0;
+}
+.rsc-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-left: 20px;
+  margin-left: auto;
+}

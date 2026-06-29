@@ -78,7 +78,42 @@ App.Datos = (() => {
     } catch { return []; }
   }
 
-function filterControls(tab) {
+function getSearchFields(tab) {
+    const base = [{ value: '', label: 'Todos los campos' }];
+    const byTab = {
+      ventas: [
+        { value: 'transactionId', label: 'ID'       },
+        { value: 'sucursal',      label: 'Sucursal' },
+        { value: 'canal',         label: 'Canal'    },
+        { value: 'montoTotal',    label: 'Monto'    },
+        { value: 'fecha',         label: 'Fecha'    },
+      ],
+      inventario: [
+        { value: 'itemId',         label: 'ID'        },
+        { value: 'nombre',         label: 'Nombre'    },
+        { value: 'categoria',      label: 'Categoría' },
+        { value: 'sucursal',       label: 'Sucursal'  },
+        { value: 'cantidad',       label: 'Cantidad'  },
+        { value: 'precioUnitario', label: 'Precio'    },
+      ],
+      empleados: [
+        { value: 'empleadoId', label: 'ID'       },
+        { value: 'nombre',     label: 'Nombre'   },
+        { value: 'sucursal',   label: 'Sucursal' },
+        { value: 'turno',      label: 'Turno'    },
+      ],
+      eventos: [
+        { value: 'reporteId',   label: 'ID'          },
+        { value: 'tipo',        label: 'Tipo'        },
+        { value: 'sucursal',    label: 'Sucursal'    },
+        { value: 'monto',       label: 'Monto'       },
+        { value: 'descripcion', label: 'Descripción' },
+      ],
+    };
+    return [...base, ...(byTab[tab] || [])];
+  }
+
+  function filterControls(tab) {
     let extraFilter = '';
     if (tab === 'ventas') {
       extraFilter = UI.dropdown({
@@ -147,9 +182,10 @@ function filterControls(tab) {
         <div id="filter-active-badges"></div>
       </div>
       <div class="filter-search-row">
+        ${UI.dropdown({ id: 'fc-search-field', placeholder: 'Todos los campos', options: getSearchFields(tab) })}
         <span class="search-icon">${App.Icons?.datos || ''}</span>
         <input type="text" id="datos-search" class="datos-search-input"
-          placeholder="Buscar en todos los campos..."
+          placeholder="Buscar…"
           oninput="App.Datos.search()">
       </div>
     `;
@@ -209,11 +245,15 @@ function filterControls(tab) {
     }
 
     if (searchQuery) {
-      result = result.filter(row =>
-        Object.values(row).some(v =>
+      const searchField = document.getElementById('fc-search-field')?.value || '';
+      result = result.filter(row => {
+        if (searchField) {
+          return String(row[searchField] ?? '').toLowerCase().includes(searchQuery);
+        }
+        return Object.values(row).some(v =>
           String(v ?? '').toLowerCase().includes(searchQuery)
-        )
-      );
+        );
+      });
     }
 
     return result;
@@ -316,6 +356,10 @@ function filterControls(tab) {
       activeTab   = 'ventas';
       currentPage = 1;
       renderShell();
+      UI.onSelect('fc-search-field', campo => {
+        const input = document.getElementById('datos-search');
+        if (input) input.placeholder = campo ? `Buscar por ${campo}…` : 'Buscar…';
+      });
       await this._load();
     },
 
@@ -335,6 +379,10 @@ function filterControls(tab) {
         b.classList.toggle('active', t?.id === tab);
       });
       document.getElementById('filter-bar').innerHTML = filterControls(tab);
+      UI.onSelect('fc-search-field', campo => {
+        const input = document.getElementById('datos-search');
+        if (input) input.placeholder = campo ? `Buscar por ${campo}…` : 'Buscar…';
+      });
       await this._load();
     },
 
@@ -346,9 +394,9 @@ function filterControls(tab) {
     },
 
     clearFilters() {
-      ['fc-sucursal','fc-desde','fc-hasta','fc-canal','fc-categoria','fc-turno','fc-tipo','datos-search']
+      ['fc-sucursal','fc-desde','fc-hasta','fc-canal','fc-categoria','fc-turno','fc-tipo','fc-search-field','datos-search']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-      ['fc-sucursal','fc-canal','fc-categoria','fc-turno','fc-tipo'].forEach(id => {
+      ['fc-sucursal','fc-canal','fc-categoria','fc-turno','fc-tipo','fc-search-field'].forEach(id => {
         const label = document.getElementById(`dd-label-${id}`);
         if (label) label.textContent = label.dataset?.placeholder || 'Seleccionar';
       });
