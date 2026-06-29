@@ -358,76 +358,110 @@ App.Reportes = (() => {
       <div class="page-header">
         <h2>Reportes Ejecutivos</h2>
       </div>
-      <div class="report-layout">
-        <div class="report-panel card">
-          <div class="card-header">
-            <div class="card-title">Parámetros del reporte</div>
-          </div>
 
-          <div class="params-grid">
-
-            <!-- Columna 1: Sucursales -->
-            <div class="form-group" style="margin:0">
-              <label>Sucursales</label>
-              <div class="multi-select multi-select-dimmed" id="rp-sucursales">
-                <label class="multi-select-item multi-select-all">
-                  <input type="checkbox" id="rp-suc-todas" value=""
-                    onchange="App.Reportes.toggleTodas(this)" checked>
-                  <span>Todas las sucursales</span>
-                </label>
-                <div class="multi-select-divider"></div>
-                ${SUCURSALES.map(s => `
-                  <label class="multi-select-item">
-                    <input type="checkbox" class="rp-suc-cb" value="${s}"
-                      onchange="App.Reportes.onSucursalChange()">
-                    <span>${s}</span>
-                  </label>`).join('')}
-              </div>
-            </div>
-
-            <!-- Columna 2: Tipos de evento -->
-            <div class="form-group" style="margin:0">
-              <label>Tipos de evento</label>
-              <div class="multi-select multi-select-dimmed" id="rp-tipos">
-                <label class="multi-select-item multi-select-all">
-                  <input type="checkbox" id="rp-tipo-todos" value=""
-                    onchange="App.Reportes.toggleTodosTipos(this)" checked>
-                  <span>Todos los tipos</span>
-                </label>
-                <div class="multi-select-divider"></div>
-                ${TIPOS.map(t => `
-                  <label class="multi-select-item">
-                    <input type="checkbox" class="rp-tipo-cb" value="${t}"
-                      onchange="App.Reportes.onTipoChange()">
-                    <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
-                  </label>`).join('')}
-              </div>
-            </div>
-
-            <!-- Columna 3: Fechas + Botón -->
-            <div class="params-dates-col">
-              <div class="form-group" style="margin:0">
-                <label>Fecha desde</label>
-                <input type="date" id="rp-desde">
-              </div>
-              <div class="form-group" style="margin:0">
-                <label>Fecha hasta</label>
-                <input type="date" id="rp-hasta">
-              </div>
-              <button onclick="App.Reportes.generar()" class="btn btn-primary btn-full">
-                ${App.Icons?.chart || ''} Generar
-              </button>
-            </div>
-
-          </div>
+      <!-- Barra superior con pills y botones -->
+      <div class="report-filter-bar">
+        <div class="report-active-pills" id="report-active-pills">
+          <span class="report-pill-placeholder text-muted small">
+            Sin filtros aplicados — mostrando todos los datos
+          </span>
         </div>
-        <div class="report-results" id="rp-results">
-          <div class="empty-state">
-            <p>Configure los filtros y genere un reporte</p>
-            <small>El reporte incluye ventas, inventario, empleados y eventos financieros.</small>
-          </div>
+        <div style="display:flex; gap:8px; flex-shrink:0">
+          <button onclick="App.Reportes.openFilterPanel()" class="btn btn-secondary btn-sm">
+            ${App.Icons?.filter || `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3h11M3 6.5h7M5 10h3"/></svg>`}
+            Filtros
+          </button>
+          <button onclick="App.Reportes.generar()" class="btn btn-primary btn-sm">
+            ${App.Icons?.chart || ''} Generar Reporte
+          </button>
         </div>
       </div>
+
+      <!-- Panel de filtros desplegable -->
+      <div class="report-filter-panel hidden" id="report-filter-panel">
+        <div class="rfp-header">
+          <span class="rfp-title">Filtros</span>
+          <button onclick="App.Reportes.closeFilterPanel()" class="rfp-close">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+          </button>
+        </div>
+
+        <div class="rfp-section">
+          <div class="rfp-section-header">
+            <span class="rfp-label">Sucursal</span>
+            <button class="rfp-reset" onclick="App.Reportes.resetFilter('sucursales')">Reset</button>
+          </div>
+          <div class="multi-select multi-select-dimmed" id="rp-sucursales">
+            <label class="multi-select-item multi-select-all">
+              <input type="checkbox" id="rp-suc-todas" value=""
+                onchange="App.Reportes.toggleTodas(this)" checked>
+              <span>Todas las sucursales</span>
+            </label>
+            ${SUCURSALES.map(s => `
+              <label class="multi-select-item">
+                <input type="checkbox" class="rp-suc-cb" value="${s}"
+                  onchange="App.Reportes.onSucursalChange()">
+                <span>${s}</span>
+              </label>`).join('')}
+          </div>
+        </div>
+
+        <div class="rfp-section">
+          <div class="rfp-section-header">
+            <span class="rfp-label">Rango de fechas</span>
+            <button class="rfp-reset" onclick="App.Reportes.resetFilter('fechas')">Reset</button>
+          </div>
+          <div class="rfp-dates">
+            <div>
+              <label class="rfp-input-label">Desde</label>
+              <input type="date" id="rp-desde" class="rfp-date-input">
+            </div>
+            <div>
+              <label class="rfp-input-label">Hasta</label>
+              <input type="date" id="rp-hasta" class="rfp-date-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="rfp-section">
+          <div class="rfp-section-header">
+            <span class="rfp-label">Tipo de evento</span>
+            <button class="rfp-reset" onclick="App.Reportes.resetFilter('tipos')">Reset</button>
+          </div>
+          <div class="multi-select multi-select-dimmed" id="rp-tipos">
+            <label class="multi-select-item multi-select-all">
+              <input type="checkbox" id="rp-tipo-todos" value=""
+                onchange="App.Reportes.toggleTodosTipos(this)" checked>
+              <span>Todos los tipos</span>
+            </label>
+            ${TIPOS.map(t => `
+              <label class="multi-select-item">
+                <input type="checkbox" class="rp-tipo-cb" value="${t}"
+                  onchange="App.Reportes.onTipoChange()">
+                <span>${t.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</span>
+              </label>`).join('')}
+          </div>
+        </div>
+
+        <div class="rfp-footer">
+          <button onclick="App.Reportes.resetAllFilters()" class="btn btn-outline btn-sm">
+            Reset todo
+          </button>
+          <button onclick="App.Reportes.applyAndClose()" class="btn btn-primary btn-sm">
+            Aplicar
+          </button>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="report-results" id="rp-results">
+        <div class="empty-state">
+          <p>Configure los filtros y genere un reporte</p>
+          <small>El reporte incluye ventas, inventario, empleados y eventos financieros.</small>
+        </div>
+      </div>
+
+      <!-- Historial -->
       <div class="historial-section card">
         <div class="section-title">Historial de reportes generados</div>
         <div id="rp-historial"></div>
@@ -561,6 +595,61 @@ App.Reportes = (() => {
       if (dEl) dEl.value = h.desde === '—' ? '' : h.desde;
       if (hEl) hEl.value = h.hasta === '—' ? '' : h.hasta;
       this.generar();
+    },
+
+    openFilterPanel() {
+      document.getElementById('report-filter-panel')?.classList.remove('hidden');
+    },
+
+    closeFilterPanel() {
+      document.getElementById('report-filter-panel')?.classList.add('hidden');
+    },
+
+    applyAndClose() {
+      this.closeFilterPanel();
+      this.renderActivePills();
+    },
+
+    renderActivePills() {
+      const el = document.getElementById('report-active-pills');
+      if (!el) return;
+      const sucursales = getSelectedSucursales();
+      const tipos      = getSelectedTipos();
+      const desde      = document.getElementById('rp-desde')?.value;
+      const hasta      = document.getElementById('rp-hasta')?.value;
+      const pills = [];
+      if (sucursales.length > 0) pills.push(`<span class="filter-badge">${sucursales.length === 1 ? sucursales[0] : sucursales.length + ' sucursales'}</span>`);
+      if (tipos.length > 0)      pills.push(`<span class="filter-badge">${tipos.length === 1 ? tipos[0] : tipos.length + ' tipos'}</span>`);
+      if (desde || hasta)        pills.push(`<span class="filter-badge">${desde || '…'} → ${hasta || '…'}</span>`);
+      el.innerHTML = pills.length > 0
+        ? pills.join('')
+        : '<span class="report-pill-placeholder text-muted small">Sin filtros aplicados</span>';
+    },
+
+    resetFilter(section) {
+      if (section === 'sucursales') {
+        const todasEl = document.getElementById('rp-suc-todas');
+        if (todasEl) todasEl.checked = true;
+        document.querySelectorAll('.rp-suc-cb').forEach(cb => { cb.checked = false; });
+        document.getElementById('rp-sucursales')?.classList.add('multi-select-dimmed');
+      } else if (section === 'tipos') {
+        const todosEl = document.getElementById('rp-tipo-todos');
+        if (todosEl) todosEl.checked = true;
+        document.querySelectorAll('.rp-tipo-cb').forEach(cb => { cb.checked = false; });
+        document.getElementById('rp-tipos')?.classList.add('multi-select-dimmed');
+      } else if (section === 'fechas') {
+        const dEl = document.getElementById('rp-desde');
+        const hEl = document.getElementById('rp-hasta');
+        if (dEl) dEl.value = '';
+        if (hEl) hEl.value = '';
+      }
+    },
+
+    resetAllFilters() {
+      this.resetFilter('sucursales');
+      this.resetFilter('tipos');
+      this.resetFilter('fechas');
+      this.renderActivePills();
     },
 
     clearHistorial() {

@@ -79,62 +79,98 @@ App.Datos = (() => {
   }
 
 function filterControls(tab) {
-    let extra = '';
+    let extraFilter = '';
     if (tab === 'ventas') {
-      extra = `<select id="fc-canal">
-        <option value="">Canal (todos)</option>
-        <option value="Tienda Física">Tienda Física</option>
-        <option value="Online">Online</option>
-      </select>`;
+      extraFilter = UI.dropdown({
+        id: 'fc-canal',
+        placeholder: 'Canal',
+        options: [
+          { value: '', label: 'Canal (todos)' },
+          { value: 'Tienda Física', label: 'Tienda Física' },
+          { value: 'Online', label: 'Online' },
+        ],
+      });
     } else if (tab === 'inventario') {
-      extra = `<select id="fc-categoria">
-        <option value="">Categoría (todas)</option>
-        <option value="electronica">Electrónica</option>
-        <option value="ropa">Ropa</option>
-        <option value="alimentos">Alimentos</option>
-        <option value="hogar">Hogar</option>
-        <option value="deportes">Deportes</option>
-      </select>`;
+      extraFilter = UI.dropdown({
+        id: 'fc-categoria',
+        placeholder: 'Categoría',
+        options: [
+          { value: '', label: 'Categoría (todas)' },
+          { value: 'electronica', label: 'Electrónica' },
+          { value: 'ropa', label: 'Ropa' },
+          { value: 'alimentos', label: 'Alimentos' },
+          { value: 'hogar', label: 'Hogar' },
+          { value: 'deportes', label: 'Deportes' },
+        ],
+      });
     } else if (tab === 'empleados') {
-      extra = `<select id="fc-turno">
-        <option value="">Turno (todos)</option>
-        <option value="manana">Mañana</option>
-        <option value="tarde">Tarde</option>
-        <option value="noche">Noche</option>
-      </select>`;
+      extraFilter = UI.dropdown({
+        id: 'fc-turno',
+        placeholder: 'Turno',
+        options: [
+          { value: '', label: 'Turno (todos)' },
+          { value: 'manana', label: 'Mañana' },
+          { value: 'tarde', label: 'Tarde' },
+          { value: 'noche', label: 'Noche' },
+        ],
+      });
     } else if (tab === 'eventos') {
-      extra = `<select id="fc-tipo">
-        <option value="">Tipo (todos)</option>
-        <option value="cierre-diario">Cierre diario</option>
-        <option value="conciliacion">Conciliación</option>
-        <option value="descuento">Descuento</option>
-        <option value="devolucion">Devolución</option>
-        <option value="bonificacion">Bonificación</option>
-      </select>`;
+      extraFilter = UI.dropdown({
+        id: 'fc-tipo',
+        placeholder: 'Tipo',
+        options: [
+          { value: '', label: 'Tipo (todos)' },
+          { value: 'cierre-diario', label: 'Cierre diario' },
+          { value: 'conciliacion', label: 'Conciliación' },
+          { value: 'descuento', label: 'Descuento' },
+          { value: 'devolucion', label: 'Devolución' },
+          { value: 'bonificacion', label: 'Bonificación' },
+        ],
+      });
     }
+
     return `
-      <div class="filter-row">
-        <select id="fc-sucursal">
-          <option value="">Sucursal (todas)</option>
-          ${SUCURSALES.map(s => `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-        </select>
-        <input type="date" id="fc-desde" title="Desde">
-        <input type="date" id="fc-hasta" title="Hasta">
-        ${extra}
+      <div class="filter-pill-bar" id="filter-pill-bar">
+        ${UI.dropdown({
+          id: 'fc-sucursal',
+          placeholder: 'Sucursal',
+          options: [
+            { value: '', label: 'Todas las sucursales' },
+            ...SUCURSALES.map(s => ({ value: s, label: s })),
+          ],
+        })}
+        ${UI.datePicker({ id: 'fc-dates', fromId: 'fc-desde', toId: 'fc-hasta', label: 'Fecha' })}
+        ${extraFilter}
+        <div class="filter-pill-sep"></div>
         <button onclick="App.Datos.applyFilters()" class="btn btn-primary btn-sm">Filtrar</button>
-        <button onclick="App.Datos.clearFilters()" class="btn btn-secondary btn-sm">Limpiar</button>
+        <button onclick="App.Datos.clearFilters()" class="btn btn-outline btn-sm">Limpiar</button>
+        <div id="filter-active-badges"></div>
       </div>
       <div class="filter-search-row">
         <span class="search-icon">${App.Icons?.datos || ''}</span>
-        <input
-          type="text"
-          id="datos-search"
-          class="datos-search-input"
-          placeholder="Buscar en todos los campos: ID, nombre, sucursal, monto..."
-          oninput="App.Datos.search()"
-        />
+        <input type="text" id="datos-search" class="datos-search-input"
+          placeholder="Buscar en todos los campos..."
+          oninput="App.Datos.search()">
       </div>
     `;
+  }
+
+  function renderActiveBadges() {
+    const badgesEl = document.getElementById('filter-active-badges');
+    if (!badgesEl) return;
+    const suc   = document.getElementById('fc-sucursal')?.value;
+    const desde = document.getElementById('fc-desde')?.value;
+    const hasta = document.getElementById('fc-hasta')?.value;
+    const extra = document.getElementById('fc-canal')?.value
+               || document.getElementById('fc-categoria')?.value
+               || document.getElementById('fc-turno')?.value
+               || document.getElementById('fc-tipo')?.value;
+
+    const badges = [];
+    if (suc)          badges.push(`<span class="filter-badge">${suc} <span onclick="App.Datos.clearFilter('fc-sucursal')">×</span></span>`);
+    if (desde || hasta) badges.push(`<span class="filter-badge">${desde || '…'} → ${hasta || '…'} <span onclick="App.Datos.clearFilter('fc-dates')">×</span></span>`);
+    if (extra)        badges.push(`<span class="filter-badge">${extra} <span onclick="App.Datos.clearFilter('extra')">×</span></span>`);
+    badgesEl.innerHTML = badges.join('');
   }
 
   function computeFilters() {
@@ -263,8 +299,7 @@ function filterControls(tab) {
               onclick="App.Datos.switchTab('${t.id}')">${t.label}</button>
           `).join('')}
         </div>
-        <div class="filter-bar" id="filter-bar"
-          style="box-shadow:none; border-radius:0; border-bottom:1px solid var(--gray-100); margin:0">
+        <div id="filter-bar">
           ${filterControls(activeTab)}
         </div>
         <div id="table-container" class="table-container" style="padding:0">
@@ -307,15 +342,45 @@ function filterControls(tab) {
       currentPage  = 1;
       filteredData = computeFilters();
       renderTable(filteredData);
+      renderActiveBadges();
     },
 
     clearFilters() {
       ['fc-sucursal','fc-desde','fc-hasta','fc-canal','fc-categoria','fc-turno','fc-tipo','datos-search']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      ['fc-sucursal','fc-canal','fc-categoria','fc-turno','fc-tipo'].forEach(id => {
+        const label = document.getElementById(`dd-label-${id}`);
+        if (label) label.textContent = label.dataset?.placeholder || 'Seleccionar';
+      });
+      UI.clearDate?.('fc-dates', 'fc-desde', 'fc-hasta');
       searchQuery  = '';
+      const search = document.getElementById('datos-search');
+      if (search) search.value = '';
       currentPage  = 1;
       filteredData = [...allData];
       renderTable(filteredData);
+      const badges = document.getElementById('filter-active-badges');
+      if (badges) badges.innerHTML = '';
+    },
+
+    clearFilter(which) {
+      if (which === 'extra') {
+        ['fc-canal','fc-categoria','fc-turno','fc-tipo'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+          const label = document.getElementById(`dd-label-${id}`);
+          if (label) label.textContent = label.dataset?.placeholder || 'Seleccionar';
+        });
+      } else if (which === 'fc-dates') {
+        UI.clearDate?.('fc-dates', 'fc-desde', 'fc-hasta');
+      } else {
+        const el = document.getElementById(which); if (el) el.value = '';
+        const label = document.getElementById(`dd-label-${which}`);
+        if (label) label.textContent = label.dataset?.placeholder || 'Seleccionar';
+      }
+      currentPage  = 1;
+      filteredData = computeFilters();
+      renderTable(filteredData);
+      renderActiveBadges();
     },
 
     goPage(p) {
