@@ -21,6 +21,9 @@ volumes:
   bd-datos:
   bd-ind:
   bd-rep:
+  inventario-data:
+  empleados-data:
+  reportes-data:
 
 services:
 
@@ -59,7 +62,7 @@ services:
     restart: on-failure
 
   # ── MS3-INVENTARIO ───────────────────────────────────────────────────────────
-  # Patron: Singleton | Puerto: 8084
+  # Patron: JPA/H2 | Puerto: 8084
   ms3-inventario:
     build:
       context: ./ms3-inventario
@@ -71,10 +74,12 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
+    volumes:
+      - inventario-data:/data
     restart: on-failure
 
   # ── MS4-EMPLEADOS ────────────────────────────────────────────────────────────
-  # Patron: Singleton | Puerto: 8085
+  # Patron: JPA/H2 | Puerto: 8085
   ms4-empleados:
     build:
       context: ./ms4-empleados
@@ -86,10 +91,12 @@ services:
       - "8085:8085"
     environment:
       SERVER_PORT: 8085
+    volumes:
+      - empleados-data:/data
     restart: on-failure
 
   # ── MS5-REPORTES ─────────────────────────────────────────────────────────────
-  # Patron: Singleton | Puerto: 8086
+  # Patron: JPA/H2 | Puerto: 8086
   ms5-reportes:
     build:
       context: ./ms5-reportes
@@ -101,6 +108,8 @@ services:
       - "8086:8086"
     environment:
       SERVER_PORT: 8086
+    volumes:
+      - reportes-data:/data
     restart: on-failure
 
   # ── MS AUTH ──────────────────────────────────────────────────────────────────

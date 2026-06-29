@@ -2,6 +2,7 @@ package com.evaluacion.ms3.controller;
 
 import com.evaluacion.ms3.model.ItemInventario;
 import com.evaluacion.ms3.repository.InventarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,12 @@ import java.util.Map;
 @RequestMapping("/api/inventario")
 public class InventarioController {
 
-    private final InventarioRepository repo = InventarioRepository.getInstance();
+    private final InventarioRepository repo;
+
+    @Autowired
+    public InventarioController(InventarioRepository repo) {
+        this.repo = repo;
+    }
 
     private LocalDate parseFecha(Object valor) {
         try {

@@ -2,6 +2,7 @@ package com.evaluacion.ms5.controller;
 
 import com.evaluacion.ms5.model.EventoReporte;
 import com.evaluacion.ms5.repository.ReporteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,12 @@ import java.util.Map;
 @RequestMapping("/api/reportes")
 public class ReporteController {
 
-    private final ReporteRepository repo = ReporteRepository.getInstance();
+    private final ReporteRepository repo;
+
+    @Autowired
+    public ReporteController(ReporteRepository repo) {
+        this.repo = repo;
+    }
 
     private LocalDate parseFecha(Object valor) {
         try {

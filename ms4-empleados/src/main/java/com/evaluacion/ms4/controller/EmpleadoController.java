@@ -2,6 +2,7 @@ package com.evaluacion.ms4.controller;
 
 import com.evaluacion.ms4.model.RegistroEmpleado;
 import com.evaluacion.ms4.repository.EmpleadoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,12 @@ import java.util.Map;
 @RequestMapping("/api/empleados")
 public class EmpleadoController {
 
-    private final EmpleadoRepository repo = EmpleadoRepository.getInstance();
+    private final EmpleadoRepository repo;
+
+    @Autowired
+    public EmpleadoController(EmpleadoRepository repo) {
+        this.repo = repo;
+    }
 
     private LocalDate parseFecha(Object valor) {
         try {
