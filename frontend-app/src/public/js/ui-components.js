@@ -80,20 +80,20 @@ window.UI = (() => {
           <span id="drp-label-${id}">${label}</span>
           <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4l4 4 4-4"/></svg>
         </button>
-        <div class="ui-cal hidden" id="drp-cal-${id}">
+        <div class="ui-cal hidden" id="drp-cal-${id}" onclick="event.stopPropagation()">
           <div class="ui-cal-header">
-            <button class="ui-cal-nav" onclick="UI.calPrev('${id}')">
+            <button class="ui-cal-nav" onclick="event.stopPropagation(); UI.calPrev('${id}')">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 3L5 7l4 4"/></svg>
             </button>
             <span class="ui-cal-month" id="drp-month-${id}"></span>
-            <button class="ui-cal-nav" onclick="UI.calNext('${id}')">
+            <button class="ui-cal-nav" onclick="event.stopPropagation(); UI.calNext('${id}')">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 3l4 4-4 4"/></svg>
             </button>
           </div>
           <div class="ui-cal-grid" id="drp-grid-${id}"></div>
           <div class="ui-cal-footer">
-            <button class="btn btn-sm btn-outline" onclick="UI.clearDate('${id}','${fromId}','${toId}')">Limpiar</button>
-            <button class="btn btn-sm btn-primary" onclick="UI.applyDate('${id}','${fromId}','${toId}')">Aplicar</button>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); UI.clearDate('${id}','${fromId}','${toId}')">Limpiar</button>
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); UI.applyDate('${id}','${fromId}','${toId}')">Aplicar</button>
           </div>
         </div>
         <input type="hidden" id="${fromId}">
@@ -141,7 +141,7 @@ window.UI = (() => {
       const isTo    = s.to   === date;
       const inRange = s.from && s.to && date > s.from && date < s.to;
       html += `<div class="ui-cal-day ${isFrom ? 'from' : ''} ${isTo ? 'to' : ''} ${inRange ? 'in-range' : ''}"
-        onclick="UI.selectDate('${id}','${date}')">${d}</div>`;
+        onclick="event.stopPropagation(); UI.selectDate('${id}','${date}')">${d}</div>`;
     }
     html += '</div>';
     document.getElementById(`drp-grid-${id}`).innerHTML = html;

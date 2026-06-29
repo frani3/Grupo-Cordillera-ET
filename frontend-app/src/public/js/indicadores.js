@@ -313,10 +313,14 @@ App.Indicadores = (() => {
           <h2>Panel de Indicadores</h2>
           <div class="kpi-context-bar">
             <span class="kpi-context-label">Mostrando:</span>
-            <select id="kpi-sucursal" onchange="App.Indicadores.filterSucursal()">
-              <option value="">Todas las sucursales</option>
-              ${SUCURSALES.map(s => `<option value="${s}">${s}</option>`).join('')}
-            </select>
+            ${UI.dropdown({
+              id: 'kpi-sucursal',
+              placeholder: 'Todas las sucursales',
+              options: [
+                { value: '', label: 'Todas las sucursales' },
+                ...SUCURSALES.map(s => ({ value: s, label: s })),
+              ],
+            })}
           </div>
         </div>
         <button onclick="App.Indicadores.refresh()" class="btn btn-secondary">↻ Actualizar</button>
@@ -479,6 +483,7 @@ App.Indicadores = (() => {
       sucursalFiltro = '';
       loadThresholds();
       renderShell();
+      UI.onSelect('kpi-sucursal', () => App.Indicadores.filterSucursal());
       await this.refresh();
       renderLog();
       refreshInterval = setInterval(() => App.Indicadores.refresh(), 15000);
@@ -513,8 +518,12 @@ App.Indicadores = (() => {
     filterSucursal() {
       sucursalFiltro = document.getElementById('kpi-sucursal')?.value || '';
 
-      const sel = document.getElementById('kpi-sucursal');
-      if (sel) sel.classList.toggle('sucursal-activa', !!sucursalFiltro);
+      const ddEl = document.getElementById('dd-kpi-sucursal');
+      if (sucursalFiltro) {
+        ddEl?.classList.add('sucursal-activa');
+      } else {
+        ddEl?.classList.remove('sucursal-activa');
+      }
 
       const banner     = document.getElementById('kpi-banner');
       const bannerText = document.getElementById('kpi-banner-text');

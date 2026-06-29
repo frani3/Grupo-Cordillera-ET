@@ -683,8 +683,8 @@ table { border-collapse: collapse; width: 100%; }
   display: flex;
   align-items: center;
   gap: 8px;
-  border-top: 1px solid var(--gray-200);
-  padding-top: 10px;
+  border-top: 1px solid var(--gray-100);
+  padding: 10px 20px 12px;
 }
 .search-icon {
   font-size: 14px;
@@ -1607,3 +1607,46 @@ tbody tr:hover td { background: var(--accent-light); }
   justify-content: space-between;
   padding: 14px 20px;
 }
+
+/* ── Indicadores: dropdown activo ────────────────────────────────────────── */
+#dd-kpi-sucursal.sucursal-activa {
+  border-color: var(--accent);
+  background-color: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Reportes: checkboxes en rfp-section ─────────────────────────────────── */
+.rfp-section .multi-select {
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.rfp-section .multi-select-item {
+  padding: 8px 14px;
+  gap: 10px;
+}
+.rfp-section .multi-select-item:hover { background: var(--accent-light); }
+.rfp-section .multi-select-all {
+  background: var(--surface);
+  border-bottom: 1px solid var(--gray-100);
+}
+.rfp-section .multi-select-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.rfp-section .multi-select-item span { font-size: 13px; color: var(--text); }
+.rfp-section .multi-select-all span { font-weight: 600; color: var(--accent); }
+.rfp-section .multi-select-dimmed .multi-select-item:not(.multi-select-all) { opacity: .4; }
+
+/* ── Reportes: date picker dentro de rfp-section ────────────────────────── */
+.rfp-section .ui-daterange { display: block; }
+.rfp-section .ui-daterange-btn {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: var(--radius-sm);
+}
+.rfp-section .ui-cal { position: static; box-shadow: none; border: 1.5px solid var(--gray-200); margin-top: 10px; animation: none; }

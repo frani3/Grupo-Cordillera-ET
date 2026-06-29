@@ -411,16 +411,12 @@ App.Reportes = (() => {
             <span class="rfp-label">Rango de fechas</span>
             <button class="rfp-reset" onclick="App.Reportes.resetFilter('fechas')">Reset</button>
           </div>
-          <div class="rfp-dates">
-            <div>
-              <label class="rfp-input-label">Desde</label>
-              <input type="date" id="rp-desde" class="rfp-date-input">
-            </div>
-            <div>
-              <label class="rfp-input-label">Hasta</label>
-              <input type="date" id="rp-hasta" class="rfp-date-input">
-            </div>
-          </div>
+          ${UI.datePicker({
+            id:     'rp-dates',
+            fromId: 'rp-desde',
+            toId:   'rp-hasta',
+            label:  'Seleccionar rango',
+          })}
         </div>
 
         <div class="rfp-section">
@@ -638,10 +634,7 @@ App.Reportes = (() => {
         document.querySelectorAll('.rp-tipo-cb').forEach(cb => { cb.checked = false; });
         document.getElementById('rp-tipos')?.classList.add('multi-select-dimmed');
       } else if (section === 'fechas') {
-        const dEl = document.getElementById('rp-desde');
-        const hEl = document.getElementById('rp-hasta');
-        if (dEl) dEl.value = '';
-        if (hEl) hEl.value = '';
+        UI.clearDate?.('rp-dates', 'rp-desde', 'rp-hasta');
       }
     },
 
