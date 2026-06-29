@@ -52,6 +52,17 @@ window.UI = (() => {
       menu.querySelectorAll('.ui-dd-option').forEach(opt => {
         const isSelected = opt.dataset?.value === value;
         opt.classList.toggle('selected', isSelected);
+        const checkSpan = opt.querySelector('.ui-dd-check, .ui-dd-check-empty');
+        if (checkSpan) {
+          if (isSelected) {
+            checkSpan.className = 'ui-dd-check';
+            checkSpan.innerHTML = App.Icons?.check ||
+              `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="2 6 5 9 10 3"/></svg>`;
+          } else {
+            checkSpan.className = 'ui-dd-check-empty';
+            checkSpan.innerHTML = '';
+          }
+        }
       });
     }
     const cb = _callbacks[id];
