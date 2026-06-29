@@ -1,5 +1,5 @@
 # Análisis Técnico — Justificación de Patrones de Diseño
-## Proyecto Evaluación 2 — Arquitectura de Software
+## Proyecto Evaluación 3 — Arquitectura de Software
 
 ---
 
@@ -10,36 +10,36 @@ El sistema implementa una arquitectura de microservicios en cinco capas. Cada ca
 > *"El sistema debe soportar múltiples entornos, garantizar la seguridad entre capas, ser mantenible por un equipo distribuido y escalar sin reescribir código existente."*
 
 ```
-┌─────────────────────────────────────────────────────┐
-│   frontend-app  (Node.js)  — Patron FACTORY METHOD  │
-└────────────────────────┬────────────────────────────┘
-                         │ HTTP / JSON
-┌────────────────────────▼────────────────────────────┐
-│   bff-service   (Spring Boot) — Patron PROXY        │
-└────────────────────────┬────────────────────────────┘
-                         │ HTTP / JSON (red interna)
-┌────────────────────────▼────────────────────────────┐
-│   orq-service   (Spring Boot) — Patron STRATEGY     │
-│   (llama a MS1 y MS2 en paralelo — CompletableFuture)│
-└──────────────┬─────────────────┬───────────────────┘
-               │ HTTP            │ HTTP
-┌──────────────▼──────┐  ┌───────▼─────────────────┐
-│  ms1-pos            │  │  ms2-online              │
-│  (Spring Boot)      │  │  (Spring Boot)           │
-│  Patron SINGLETON   │  │  Patron SINGLETON        │
-│  Ventas POS         │  │  Ventas Online           │
-│  Puerto :8081       │  │  Puerto :8083            │
-└─────────────────────┘  └──────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│   frontend-app  (Node.js)  — Patrón FACTORY METHOD       │
+│                             Patrón FACADE (browser)      │
+└─────────────────────────┬────────────────────────────────┘
+                          │ HTTP / JSON
+┌─────────────────────────▼────────────────────────────────┐
+│   bff-service   (Spring Boot) — Patrón PROXY             │
+└──────┬───────────────────────────────────────────────────┘
+       │ HTTP / JSON (red interna Docker)
+       ├──▶ orq-datos  :8082  — Patrón STRATEGY
+       │         ├──▶ ms1-pos    :8081  (Singleton)
+       │         └──▶ ms2-online :8083  (Singleton)
+       ├──▶ orq-ind    :8092
+       │         ├──▶ ms3-inventario :8084  (JPA + H2)
+       │         └──▶ ms4-empleados  :8085  (JPA + H2)
+       └──▶ orq-rep    :8093
+                 └──▶ ms5-reportes   :8086  (JPA + H2)
 ```
 
 **Responsabilidades por capa:**
 
 | Capa | Responsabilidad |
 |---|---|
-| MS1 / MS2 | Recibir datos, validarlos, limpiarlos y almacenarlos. Sin logica de negocio. |
-| orq-service | Consultar ambos MS en paralelo, consolidar y aplicar la estrategia de procesamiento |
-| bff-service | Validar token Bearer, auditar y delegar al orq |
-| frontend-app | Crear el cliente HTTP segun el entorno y consumir el BFF |
+| MS1 / MS2 | Recibir datos, validarlos y almacenarlos en memoria (Singleton). Sin lógica de negocio. |
+| MS3 / MS4 / MS5 | Recibir datos, validarlos y persistirlos en H2 (JPA). Sin lógica de negocio. |
+| orq-datos | Consultar MS1+MS2 en paralelo, consolidar y aplicar estrategia de procesamiento |
+| orq-ind | Consultar MS3+MS4 en paralelo, calcular indicadores operacionales |
+| orq-rep | Consultar MS5, calcular totales financieros |
+| bff-service | Validar token Bearer, auditar y delegar a los orquestadores |
+| frontend-app | Crear el cliente HTTP según el entorno y consumir el BFF |
 
 ---
 
@@ -71,19 +71,41 @@ if (process.env.NODE_ENV === 'production') {
 ```
 ApiServiceFactory.create(tipo, entorno)
        │
-       ├── 'data'  + 'production'  → new DataService({ url: 'http://bff-service:8080', timeout: 5000 })
-       ├── 'data'  + 'development' → new DataService({ url: 'http://localhost:8080', timeout: 10000 })
-       ├── 'auth'  + 'production'  → new AuthService({ url: 'http://bff-service:8080', timeout: 5000 })
-       └── 'report' + cualquier    → new ReportService(...)  ← extensible sin modificar la factory
+       ├── 'data'       + 'production'  → new DataService({ url: 'http://api-gateway:80', timeout: 5000 })
+       ├── 'data'       + 'development' → new DataService({ url: 'http://localhost:80', timeout: 10000 })
+       ├── 'data'       + 'test'        → new DataService({ url: 'http://localhost:8080', timeout: 1000 })
+       ├── 'ventas'     + cualquiera    → new VentasService(...)
+       ├── 'inventario' + cualquiera    → new InventarioService(...)
+       ├── 'empleados'  + cualquiera    → new EmpleadosService(...)
+       ├── 'eventos'    + cualquiera    → new EventosService(...)
+       ├── 'dashboard'  + cualquiera    → new DashboardService(...)
+       └── 'auth'       + cualquiera    → new AuthService(...)  ← extensible sin modificar create()
+```
+
+**REGISTRY en EP3 (10 tipos registrados):**
+```javascript
+static REGISTRY = {
+  data:        DataService,
+  auth:        AuthService,
+  dashboard:   DashboardService,
+  datos:       DatosService,
+  indicadores: IndicadoresService,
+  ventas:      VentasService,
+  reportes:    ReportesService,
+  inventario:  InventarioService,
+  empleados:   EmpleadosService,
+  eventos:     EventosService,
+};
 ```
 
 **Implementación real:**
 ```javascript
-// PATRÓN FACTORY METHOD: Justificación técnica para evaluación parcial 2
 static create(serviceType = 'data', environment = 'production', overrides = {}) {
   const envConfig = ApiServiceFactory.ENVIRONMENTS[environment];
-  const ServiceClass = ApiServiceFactory.REGISTRY[serviceType];
-  return new ServiceClass({ ...envConfig, ...overrides });
+  if (!envConfig) throw new Error(`Entorno desconocido: '${environment}'`);
+  const Cls = ApiServiceFactory.REGISTRY[serviceType];
+  if (!Cls) throw new Error(`Tipo desconocido: '${serviceType}'`);
+  return new Cls({ ...envConfig, ...overrides });
 }
 ```
 
@@ -102,7 +124,7 @@ El parámetro `overrides.fetcher` permite tests que **nunca hacen HTTP real**, e
 
 ### Principios SOLID Aplicados
 
-- **OCP (Open/Closed):** `register()` permite extender con `ReportService` sin modificar `create()`.
+- **OCP (Open/Closed):** `register()` permite extender con nuevos tipos sin modificar `create()`.
 - **DIP (Dependency Inversion):** Los componentes dependen de `ApiServiceFactory` (abstracción), nunca de `DataService` directamente.
 - **SRP (Single Responsibility):** La factory crea; los servicios hacen HTTP; los componentes renderizan.
 
@@ -148,29 +170,29 @@ BffController (Client)
        │ llama a
 ServiceProxy (Proxy) implements IOrqService
        │
-       ├── validateBearerToken()   ← Proxy de Protección
+       ├── validateToken()         ← Proxy de Protección
        ├── auditLog("REQUEST")     ← Proxy de Auditoría
        ├── realSubject.fetchData() ← Delegación al RealSubject
        └── auditLog("RESPONSE")   ← Post-interceptación
               │
        OrqServiceClient (RealSubject) implements IOrqService
               │ HTTP
-       orq-service:8081
+       orq-datos:8080
 ```
 
 **Implementación real:**
 ```java
-// PATRÓN PROXY: Justificación técnica para evaluación parcial 2
 @Override
 public DataResponse fetchData(String requestId, String authToken) {
-    validateBearerToken(authToken);           // PRE: Protección
+    validateToken(authToken);              // PRE: Protección (lanza SecurityException)
     auditLog("REQUEST", requestId, authToken);
 
     DataResponse response;
     try {
         response = realSubject.fetchData(requestId, authToken); // Delegación
     } catch (Exception e) {
-        return DataResponse.error("Error interno: " + e.getMessage());
+        auditLog("ERROR", requestId, e.getMessage());
+        return DataResponse.error("Error interno del proxy: " + e.getMessage());
     }
 
     auditLog("RESPONSE", requestId, response.status()); // POST: Auditoría
@@ -178,22 +200,27 @@ public DataResponse fetchData(String requestId, String authToken) {
 }
 ```
 
+**`validateToken()` verifica tres condiciones en cadena:**
+1. Token no nulo ni en blanco → `SecurityException`
+2. Comienza con `"Bearer "` → `SecurityException`
+3. `authClient.validate(token)` retorna `true` (llama a MS AUTH) → `SecurityException`
+
 ### Por qué mejora la Mantenibilidad
 
 | Dimensión | Sin Proxy | Con Proxy |
 |-----------|----------|-----------|
 | Agregar nuevo header de auditoría | Modificar todos los Controllers | Solo modificar `auditLog()` en ServiceProxy |
-| Cambiar Bearer → mTLS | Buscar en todos los Controllers | Solo modificar `validateBearerToken()` |
-| Tests de seguridad | Requieren contexto HTTP completo | `ServiceProxyTest` puro con JUnit + Mockito |
+| Cambiar Bearer → mTLS | Buscar en todos los Controllers | Solo modificar `validateToken()` |
+| Tests de seguridad | Requieren contexto HTTP completo | Constructor package-private `ServiceProxy(IOrqService mock, AuthClient mock)` |
 | Nuevo endpoint | Seguridad/auditoría ya incluidas por el Proxy | Cero código extra de seguridad en el Controller |
 
 ### Por qué mejora la Seguridad
 
-**Un único punto de control:** Ninguna petición llega al `OrqServiceClient` sin pasar por el Proxy. Si hubiera múltiples Controllers sin Proxy, cada uno debería duplicar la validación, y la omisión en uno crearía una vulnerabilidad. El Proxy garantiza que esto sea imposible.
+**Un único punto de control:** Ninguna petición llega al `OrqServiceClient` sin pasar por el Proxy. Si hubiera múltiples Controllers sin Proxy, cada uno debería duplicar la validación, y la omisión en uno crearía una vulnerabilidad.
 
-**Sin stack traces al cliente:** El Proxy captura excepciones del servicio real y devuelve `DataResponse.error(mensaje)` en lugar de información interna del sistema (CVE-style information disclosure).
+**Sin stack traces al cliente:** El Proxy captura excepciones del servicio real y devuelve `DataResponse.error(mensaje)` en lugar de información interna del sistema.
 
-**Trazabilidad forense:** El audit log registra cada operación con timestamp, permitiendo reconstruir incidentes post-facto (requisito de cumplimiento GDPR/OWASP).
+**Trazabilidad forense:** El audit log registra cada operación con timestamp, permitiendo reconstruir incidentes post-facto.
 
 ### Diferencia entre Proxy y Decorator
 
@@ -204,7 +231,7 @@ public DataResponse fetchData(String requestId, String authToken) {
 | El cliente no sabe si hay un proxy | El cliente generalmente conoce los decoradores |
 | Casos de uso: seguridad, caché, lazy init | Casos de uso: compresión, cifrado, formateo |
 
-**Conclusión:** En este sistema el objetivo es **controlar y proteger el acceso** al orq-service → Proxy. Si el objetivo fuera agregar compresión de respuesta visible al cliente, sería Decorator.
+**Conclusión:** En este sistema el objetivo es **controlar y proteger el acceso** al orq-datos → Proxy. Si el objetivo fuera agregar compresión de respuesta visible al cliente, sería Decorator.
 
 ### Principios SOLID Aplicados
 
@@ -215,14 +242,14 @@ public DataResponse fetchData(String requestId, String authToken) {
 
 ---
 
-## 3. Orq Service — Patrón Strategy
+## 3. Orq-Datos — Patrón Strategy
 
 ### Categoría GoF
 Comportamiento.
 
 ### El Problema sin el Patrón
 
-El servicio orquestador procesa solicitudes con distintos algoritmos según el tipo de dato y la carga actual. Sin Strategy:
+El servicio orquestador procesa solicitudes con distintos algoritmos según la carga actual. Sin Strategy:
 
 ```java
 // CÓDIGO FRÁGIL sin Strategy:
@@ -235,70 +262,115 @@ public String process(String data, String type) {
     // 50 líneas de lógica de caché
   }
   // → Imposible testear un algoritmo sin ejecutar todos los otros
-  // → Agregar "ml-processing" requiere modificar este método
+  // → Agregar "ml-processing" requiere modificar este método (viola OCP)
 }
 ```
 
 ### La Solución con Strategy
 
 ```
-ProcessingContext
-  └── setStrategy(IProcessingStrategy)    ← cambia el algoritmo en RUNTIME
-  └── executeStrategy(data) → delega
+OrqDatosController (Contexto)
+  └── strategyFactory.getStrategy("batch"|"stream"|"cache")
           │
-          ├── BatchProcessingStrategy.process()   → lotes de N registros
-          ├── StreamProcessingStrategy.process()  → tiempo real, registro a registro
-          └── CacheProcessingStrategy.process()   → hit/miss → evita reprocesamiento
+          ├── BatchStrategy  (@Component("batch"))  → agrega por canal POS/Online
+          ├── StreamStrategy (@Component("stream")) → calcula ticket promedio
+          └── CacheStrategy  (@Component("cache"))  → calcula máximo y mínimo de montos
 ```
 
-**Implementación real:**
-```java
-// PATRÓN STRATEGY: Justificación técnica para evaluación parcial 2
-// El contexto delega; la estrategia encapsula el algoritmo.
-public String executeStrategy(String data) {
-    System.out.println("[Context] Ejecutando: " + strategy.getStrategyName());
-    return strategy.process(data);
-}
+### Implementación GoF completa en EP3
 
-// Cambio de algoritmo en runtime según carga del sistema:
-context.setStrategy(new BatchProcessingStrategy(1000)); // alto volumen
-context.setStrategy(new StreamProcessingStrategy());    // tiempo real
+La implementación EP3 usa 5 clases separadas con inyección automática de Spring:
+
+**Interfaz `ProcessingStrategy`:**
+```java
+public interface ProcessingStrategy {
+    Map<String, Object> procesar(String requestId,
+                                  List<Map<String, Object>> transacciones,
+                                  double totalMonto);
+    String getNombre();
+}
+```
+
+**Estrategias concretas (una clase por algoritmo):**
+```java
+@Component("batch")
+public class BatchStrategy implements ProcessingStrategy {
+    @Override
+    public Map<String, Object> procesar(...) {
+        long pos    = transacciones.stream().filter(t -> "Tienda Física".equals(t.get("canal"))).count();
+        long online = transacciones.stream().filter(t -> "Online".equals(t.get("canal"))).count();
+        String resultado = "BATCH[%s]: %d transacciones | POS=%d | Online=%d | total=$%d"
+                .formatted(requestId, transacciones.size(), pos, online, (long) totalMonto);
+        return Map.of("estrategia", getNombre(), "resultado", resultado,
+                      "transaccionesPOS", pos, "transaccionesOnline", online);
+    }
+    @Override public String getNombre() { return "batch"; }
+}
+// StreamStrategy → @Component("stream"), CacheStrategy → @Component("cache")
+```
+
+**`StrategyFactory`:**
+```java
+@Component
+public class StrategyFactory {
+    private final Map<String, ProcessingStrategy> strategies;
+
+    public StrategyFactory(Map<String, ProcessingStrategy> strategies) {
+        this.strategies = strategies;
+    }
+
+    public ProcessingStrategy getStrategy(String nombre) {
+        return strategies.getOrDefault(
+                nombre != null ? nombre.toLowerCase() : "batch",
+                strategies.get("batch")
+        );
+    }
+}
+```
+
+Spring detecta automáticamente todos los beans que implementan `ProcessingStrategy` y los inyecta en el `Map<String, ProcessingStrategy>` usando el nombre del `@Component` como clave. `getStrategy()` resuelve en O(1) sin ningún `if` ni `switch`.
+
+**Uso en el controlador:**
+```java
+// Selección + ejecución de la estrategia con parámetro HTTP
+ProcessingStrategy processingStrategy = strategyFactory.getStrategy(strategy);
+Map<String, Object> estrategiaResult  = processingStrategy.procesar(id, transacciones, totalMonto);
 ```
 
 ### Por qué mejora la Mantenibilidad
 
-- **Algoritmos aislados:** Cada Strategy tiene su propia clase con una única razón para cambiar (SRP). Modificar `BatchProcessingStrategy` no afecta a `StreamProcessingStrategy`.
-- **Extensibilidad:** Agregar `MLProcessingStrategy` no modifica el contexto ni las estrategias existentes (OCP).
-- **Testabilidad:** Cada Strategy se unit-testea de forma completamente independiente con datos de prueba controlados.
-- **Cambio en runtime:** La estrategia puede cambiar sin reiniciar el servicio, respondiendo a picos de carga o cambios en el tipo de datos.
+- **Algoritmos aislados:** Cada Strategy tiene su propia clase con una única razón para cambiar (SRP). Modificar `BatchStrategy` no afecta a `StreamStrategy`.
+- **Extensibilidad:** Agregar `MLProcessingStrategy` no modifica el contexto ni las estrategias existentes (OCP). Solo se añade una clase con `@Component("ml")`.
+- **Testabilidad:** Cada Strategy se unit-testea de forma completamente independiente.
+- **Cambio en runtime:** El parámetro `?strategy=batch|stream|cache` permite cambiar el algoritmo por request sin reiniciar el servicio.
 
 ### Alternativa Descartada: Template Method
 
-Template Method define el esqueleto de un algoritmo y permite que las subclases sobreescriban pasos específicos, pero lo hace mediante **herencia estática**: la subclase se determina en tiempo de compilación. Strategy usa **composición dinámica**: el algoritmo concreto se inyecta en runtime. Para un servicio que necesita cambiar de algoritmo según la carga actual, Strategy es la única opción correcta.
+Template Method define el esqueleto de un algoritmo mediante **herencia estática**: la subclase se determina en tiempo de compilación. Strategy usa **composición dinámica**: el algoritmo concreto se inyecta en runtime. Para un servicio que necesita cambiar de algoritmo por parámetro HTTP, Strategy es la única opción correcta.
 
 ### Principios SOLID Aplicados
 
-- **OCP:** Nuevo algoritmo = nueva clase; cero cambios en el contexto.
+- **OCP:** Nuevo algoritmo = nueva clase; cero cambios en el controlador.
 - **SRP:** Cada algoritmo tiene exactamente una razón para cambiar.
-- **DIP:** `ProcessingContext` depende de `IProcessingStrategy` (interfaz), no de implementaciones concretas.
+- **DIP:** `OrqDatosController` depende de `ProcessingStrategy` (interfaz), no de `BatchStrategy` (implementación).
 
 ---
 
-## 4. MS1-pos y MS2-online — Patrón Singleton
+## 4. MS1-POS y MS2-Online — Patrón Singleton
 
 ### Categoría GoF
 Creacional.
 
 ### Descripción de los microservicios
 
-El sistema cuenta con **dos microservicios de datos**, cada uno con su propio dominio y repositorio en memoria:
+El sistema cuenta con **dos microservicios de datos en memoria**, cada uno con su propio dominio y repositorio:
 
 | Microservicio | Puerto | Dominio | Endpoint entrada | Endpoint consulta |
 |---|---|---|---|---|
 | `ms1-pos` | 8081 | Ventas en tienda física | `POST /api/pos/simulate-mq` | `GET /api/pos/data` |
 | `ms2-online` | 8083 | Ventas canal online | `POST /api/online/venta` | `GET /api/online/ventas` |
 
-Ambos microservicios tienen la **misma responsabilidad**: recibir datos, validarlos, limpiarlos y almacenarlos. No aplican filtros ni lógica de negocio — esa responsabilidad recae en el orq-service.
+Ambos microservicios tienen la **misma responsabilidad**: recibir datos, validarlos, limpiarlos y almacenarlos. No aplican filtros ni lógica de negocio — esa responsabilidad recae en el orq-datos.
 
 ### El Problema sin el Patrón
 
@@ -312,224 +384,276 @@ class VentaRepository {
     db.add(v);
     // → Con 100 solicitudes concurrentes = 100 listas separadas
     // → GET /ventas devuelve 0 registros porque cada lista es local
-    // → Inconsistencia total de estado
   }
 }
 ```
 
 ### La Solución con Singleton (Holder Pattern)
 
-Ambos microservicios implementan el mismo patrón — aquí el ejemplo de MS2:
+Ambos microservicios implementan el mismo patrón — ejemplo de MS1:
 
 ```java
-// PATRON SINGLETON — Holder Pattern: thread-safe sin synchronized
+// PATRÓN SINGLETON — Holder Pattern: thread-safe sin synchronized
 @Repository
-public class OnlineVentaRepository {
+public class PosTransactionRepository {
 
-    protected OnlineVentaRepository() {}  // Constructor protegido
+    protected PosTransactionRepository() {}  // Constructor protegido
 
     private static class DatabaseHolder {
-        // La JVM garantiza que esta inicializacion es atomica
-        static final List<OnlineVenta> INSTANCE = new CopyOnWriteArrayList<>();
+        // La JVM garantiza que esta inicialización es atómica
+        static final List<PosTransaction> INSTANCE = new CopyOnWriteArrayList<>();
     }
 
-    public static List<OnlineVenta> getDatabase() {
+    public static List<PosTransaction> getDatabase() {
         return DatabaseHolder.INSTANCE;   // Siempre la misma lista
     }
 
-    public OnlineVenta save(OnlineVenta venta) {
-        if (venta.getId() == null) {
-            venta.setId((long) (getDatabase().size() + 1));
+    public PosTransaction save(PosTransaction transaction) {
+        if (transaction.getId() == null) {
+            transaction.setId((long) (getDatabase().size() + 1));
         }
-        getDatabase().add(venta);
-        return venta;
+        getDatabase().add(transaction);
+        return transaction;
+    }
+
+    public List<PosTransaction> findAll() {
+        return new ArrayList<>(getDatabase());
     }
 }
 ```
 
-MS1 implementa el mismo patrón en `PosTransactionRepository` con `CopyOnWriteArrayList<PosTransaction>`.
+MS2 implementa el mismo patrón en `OnlineVentaRepository` con `CopyOnWriteArrayList<OnlineVenta>`, agregando además `findUltimosDias(int dias)` para filtrar ventas recientes.
 
-### Por qué el Holder Pattern es superior a otras implementaciones de Singleton
+### Por qué el Holder Pattern es superior a otras implementaciones
 
-| Implementacion | Thread-safe | Lazy init | Overhead |
+| Implementación | Thread-safe | Lazy init | Overhead |
 |---|---|---|---|
-| Campo estatico simple | No (race condition) | No | Ninguno |
-| `synchronized getInstance()` | Si | Si | Alto (lock en cada llamada) |
-| Double-checked locking | Si (con `volatile`) | Si | Bajo (lock solo primera vez) |
-| **Holder Pattern** (elegido) | **Si (por la JVM)** | **Si** | **Ninguno** |
+| Campo estático simple | No (race condition) | No | Ninguno |
+| `synchronized getInstance()` | Sí | Sí | Alto (lock en cada llamada) |
+| Double-checked locking | Sí (con `volatile`) | Sí | Bajo (lock solo primera vez) |
+| **Holder Pattern** (elegido) | **Sí (por la JVM)** | **Sí** | **Ninguno** |
 
 `CopyOnWriteArrayList` se elige sobre `ArrayList` porque permite lecturas concurrentes sin bloqueo, apropiado para un GET que puede ejecutarse mientras el simulador escribe.
 
-### Por qué mejora la Mantenibilidad y Seguridad
+### Contraste intencional con MS3/MS4/MS5
 
-- **Una sola fuente de verdad:** Todos los threads del microservicio comparten la misma lista. Un POST de `simulador-pos.ps1` y un GET del orq-service leen exactamente los mismos datos.
-- **Thread safety garantizada por la JVM:** No requiere locks explícitos; la especificación del lenguaje garantiza que la inicialización estática de clases es atómica.
-- **Separación de dominios:** MS1 y MS2 tienen repositorios Singleton independientes. El orq los consulta en paralelo y consolida, evitando que un dominio afecte al otro.
+| Aspecto | MS1 / MS2 (Singleton) | MS3 / MS4 / MS5 (JPA + H2) |
+|---|---|---|
+| Persistencia | En memoria; se pierde al reiniciar | En archivo; sobrevive reinicios |
+| Patrón de acceso | `getDatabase()` estático | `JpaRepository<T, Long>` |
+| Thread safety | `CopyOnWriteArrayList` | Garantizada por JPA/Hibernate |
+| Uso | Datos transaccionales "hot" (simulados en cada ciclo) | Datos operacionales que deben persistir |
+
+Ambos enfoques coexisten en el mismo sistema para demostrar que la persistencia puede resolverse con distintas estrategias según los requisitos del dominio.
 
 ### Alternativa Descartada: Spring IoC Bean Singleton
 
 Spring Boot gestiona beans como Singleton por defecto mediante `@Scope("singleton")`. Esta sería la solución más idiomática en un proyecto Spring completo. Sin embargo, para **demostrar explícitamente el patrón de diseño GoF** en la evaluación, se implementa el patrón clásico en la capa de acceso a datos, desacoplando esta garantía del framework y haciendo el código portable a cualquier contexto Java.
 
+### Principios SOLID Aplicados
+
+- **SRP:** El repositorio tiene una única responsabilidad: garantizar la lista compartida.
+- **Separación de dominios:** MS1 y MS2 tienen repositorios Singleton independientes. El orq los consulta en paralelo y consolida, evitando que un dominio afecte al otro.
+
 ---
 
-## Tabla Resumen para Defensa Oral
+## 5. Persistencia — JPA + H2 en MS3, MS4 y MS5
 
-| Componente | Patron | Categoria GoF | Problema del Cliente | Principios SOLID | Alternativa Descartada |
+### Categoría GoF
+No es un patrón GoF de comportamiento, sino una decisión de arquitectura de persistencia. Se documenta aquí por su importancia técnica en EP3.
+
+### La Solución con JPA Repository
+
+MS3, MS4 y MS5 usan Spring Data JPA con H2 en modo archivo. Cada entidad tiene `@Entity`, `@Table`, `@Id` y `@GeneratedValue(IDENTITY)`. Los repositorios extienden `JpaRepository<T, Long>`, que provee `save()`, `findAll()`, `findById()`, `count()` y métodos derivados **sin código adicional**:
+
+```java
+@Repository
+public interface InventarioRepository extends JpaRepository<ItemInventario, Long> {
+    List<ItemInventario> findBySucursal(String sucursal);
+    List<ItemInventario> findByCategoria(String categoria);
+    List<ItemInventario> findBySucursalAndCategoria(String sucursal, String categoria);
+}
+```
+
+Spring Data deriva el SQL de los nombres de los métodos en tiempo de arranque. No hay SQL escrito a mano.
+
+**Configuración H2 en archivo (ejemplo MS3):**
+```properties
+spring.datasource.url=jdbc:h2:file:/data/bd-inventario;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE
+spring.jpa.hibernate.ddl-auto=update
+spring.h2.console.enabled=true
+```
+
+`DB_CLOSE_DELAY=-1` mantiene la BD abierta mientras la JVM esté viva. `ddl-auto=update` crea tablas si no existen y agrega columnas nuevas sin borrar datos.
+
+**Validación en controladores antes de llamar al repositorio:**
+```java
+// Si falta item_id → 400 BAD_REQUEST, sin tocar la BD
+if (!payload.containsKey("item_id") || payload.get("item_id") == null) {
+    return ResponseEntity.badRequest().body(Map.of("error", "item_id es requerido"));
+}
+// Solo si pasa validación → repo.save(entity)
+```
+
+Los volúmenes Docker nombrados (`inventario-data`, `empleados-data`, `reportes-data`) garantizan que los datos persisten aunque el contenedor se elimine con `docker-compose down`. Solo `docker-compose down -v` los borra.
+
+---
+
+## 6. Tests Unitarios
+
+### JavaScript — Jest (frontend-app)
+
+3 archivos de test, 68 casos, cobertura >70%:
+
+| Archivo | Casos | Qué verifica |
+|---|---|---|
+| `ApiServiceFactory.test.js` | 27 | Patrón Factory Method: resolución de tipos, configuración de entornos, extensibilidad con `register()`, errores por tipo/entorno desconocido |
+| `DataService.test.js` | 22 | Patrón Facade: delegación correcta a cada service, manejo de errores HTTP (401, 500) y errores de red |
+| `DataDisplay.test.js` | 19 | Consumidor del Facade: estados loading/error/data/empty, render por dominio, sanitización XSS |
+
+**Patrón de test con mockFetch:**
+```javascript
+const mockFetch = jest.fn();
+const facade = new DataFacade('test', mockFetch);
+
+test('getVentas retorna datos correctamente', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [{ id: 1 }] });
+    const result = await facade.getVentas();
+    expect(result).toHaveLength(1);
+});
+```
+
+El parámetro `fetcher` del constructor de `DataFacade` reemplaza el `fetch` real por el mock, sin modificar la clase de servicio. Esto valida el patrón Factory Method en acción: `overrides = { fetcher: mockFetch }`.
+
+El Dockerfile tiene un stage `test` que ejecuta los tests durante el build:
+```dockerfile
+FROM node:18-alpine AS test
+RUN npm test           # ← si falla, el build entero falla
+
+FROM node:18-alpine AS production
+RUN npm install --production   # sin devDependencies (jest, etc.)
+```
+
+### Java — JUnit 5 + Mockito
+
+4 archivos de test, 24 casos:
+
+| Clase test | Casos | Qué verifica |
+|---|---|---|
+| `InventarioControllerTest` | 6 | `listarItems()`, `recibirItem()` (válido, sin itemId, sin nombre, sin sucursal), `health()` |
+| `EmpleadoControllerTest` | 6 | `listarRegistros()`, `recibirRegistro()` (válido, sin empleadoId, sin turno, horas > 24), `health()` |
+| `ReporteControllerTest` | 6 | `listarEventos()`, `recibirEvento()` (válido, sin reporteId, sin tipo, monto negativo), `health()` |
+| `AuthControllerTest` | 6 | `login()` (válido/inválido), `validate()` (header Bearer/body/sin token), `health()` |
+
+**Patrón de test — sin contexto Spring:**
+```java
+@ExtendWith(MockitoExtension.class)
+class InventarioControllerTest {
+    @Mock   InventarioRepository repo;
+    @InjectMocks InventarioController controller;
+
+    @Test void listarItems_retornaListaCompleta() {
+        when(repo.findAll()).thenReturn(Arrays.asList(item1, item2));
+        ResponseEntity<List<ItemInventario>> response = controller.listarItems();
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(2, response.getBody().size());
+        verify(repo, times(1)).findAll();
+    }
+
+    @Test void recibirItem_sinItemId_retorna400() {
+        // No hay stub de repo.save() porque no debe llamarse
+        ResponseEntity<?> response = controller.recibirItem(payloadSinItemId);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(repo, never()).save(any());  // ← confirma que la validación funcionó
+    }
+}
+```
+
+`@ExtendWith(MockitoExtension.class)` activa Mockito sin levantar Spring context → tests rápidos, sin BD, sin red. `verify(repo, never()).save(any())` confirma que los datos inválidos nunca llegan a la BD.
+
+---
+
+## Tabla Resumen
+
+| Componente | Patrón | Categoría GoF | Problema del Cliente | Principios SOLID | Alternativa Descartada |
 |---|---|---|---|---|---|
 | `frontend-app` | Factory Method | Creacional | Instanciar clientes HTTP por entorno sin acoplamiento | OCP, DIP, SRP | Abstract Factory (YAGNI) |
-| `bff-service` | Proxy | Estructural | Centralizar seguridad y auditoria sin contaminar el Controller | SRP, OCP, LSP, DIP | Decorator (no controla acceso) |
-| `orq-service` | Strategy | Comportamiento | Intercambiar algoritmos de procesamiento en runtime; consolidar MS1+MS2 en paralelo | OCP, SRP, DIP | Template Method (herencia estatica) |
-| `ms1-pos` | Singleton | Creacional | Unica lista thread-safe de ventas POS en memoria compartida entre todos los threads | SRP | Spring IoC (acoplamiento al framework) |
-| `ms2-online` | Singleton | Creacional | Unica lista thread-safe de ventas online, dominio separado de MS1 | SRP | Spring IoC (acoplamiento al framework) |
+| `frontend-app` (browser) | Facade | Estructural | Ocultar URLs, headers y manejo de errores HTTP a los módulos | SRP, DIP | — |
+| `bff-service` | Proxy | Estructural | Centralizar seguridad y auditoría sin contaminar el Controller | SRP, OCP, LSP, DIP | Decorator (no controla acceso) |
+| `orq-datos` | Strategy | Comportamiento | Intercambiar algoritmos de procesamiento en runtime | OCP, SRP, DIP | Template Method (herencia estática) |
+| `ms1-pos` | Singleton | Creacional | Única lista thread-safe de ventas POS compartida entre todos los threads | SRP | Spring IoC (acoplamiento al framework) |
+| `ms2-online` | Singleton | Creacional | Única lista thread-safe de ventas online, dominio separado de MS1 | SRP | Spring IoC (acoplamiento al framework) |
+| `ms3/ms4/ms5` | JPA Repository | Arquitectura | Persistencia real entre reinicios sin contenedores adicionales | SRP | JDBC directo (boilerplate excesivo) |
 
 ---
 
 ## Preguntas Frecuentes en Defensa Oral
 
-**¿Por qué Factory y no simplemente un objeto de configuración?**
+**¿Por qué Factory Method y no simplemente un objeto de configuración?**
 Un objeto de configuración resuelve el problema de los valores, pero no el de la creación. Factory Method encapsula tanto la configuración como la instanciación, permite polimorfismo en runtime y está abierto a extensión (`register()`) sin modificar el código existente.
 
 **¿Por qué Proxy y no Decorator en el BFF?**
-La distinción clave es el propósito: Proxy controla **acceso** (quién puede llamar al servicio real y bajo qué condiciones), Decorator añade **funcionalidad visible al cliente**. Nuestro BFF necesita proteger el acceso al orq-service → Proxy. Si necesitáramos comprimir la respuesta para el frontend, sería Decorator.
+La distinción clave es el propósito: Proxy controla **acceso** (quién puede llamar al servicio real y bajo qué condiciones), Decorator añade **funcionalidad visible al cliente**. Nuestro BFF necesita proteger el acceso al orq-datos → Proxy. Si necesitáramos comprimir la respuesta para el frontend, sería Decorator.
 
 **¿Por qué Strategy y no un simple `switch` en el orquestador?**
-Un `switch` viola OCP: agregar un nuevo algoritmo requiere modificar el método. Strategy permite agregar nuevos algoritmos como clases independientes. Además, Strategy permite cambiar el algoritmo **en runtime** basado en condiciones dinámicas (carga actual, tipo de datos), algo imposible con un `switch` estático.
+Un `switch` viola OCP: agregar un nuevo algoritmo requiere modificar el método. Strategy permite agregar nuevos algoritmos como clases independientes con `@Component("nombre")`. Además, Strategy permite cambiar el algoritmo **en runtime** por parámetro HTTP, algo imposible con un `switch` estático.
 
 **¿Por qué Singleton con Holder Pattern y no `synchronized`?**
-`synchronized getInstance()` adquiere un lock en **cada llamada**, incluso cuando la instancia ya existe (overhead innecesario bajo alta concurrencia). El Holder Pattern delega la thread-safety a la JVM (garantía de la especificación del lenguaje), con costo cero en el camino feliz.
+`synchronized getInstance()` adquiere un lock en **cada llamada**, incluso cuando la instancia ya existe (overhead innecesario bajo alta concurrencia). El Holder Pattern delega la thread-safety a la JVM (garantía de la especificación del lenguaje, JLS §12.4), con costo cero en el camino feliz.
+
+**¿Por qué MS3/4/5 usan JPA/H2 y MS1/MS2 siguen con Singleton?**
+Los dominios tienen requisitos distintos. MS1/MS2 almacenan ventas de simulación que se regeneran en cada ciclo — perder datos al reiniciar es aceptable. MS3/MS4/MS5 almacenan inventario, empleados y eventos financieros que deben sobrevivir a reinicios del contenedor. La coexistencia de ambos enfoques es intencional: demuestra que la persistencia se elige según los requisitos del dominio, no por convención uniforme.
 
 **¿Cómo demuestran que el código funciona?**
-Cada componente tiene tests unitarios con JUnit 5 (Java) y Jest (Node.js). La cobertura se mide con JaCoCo en los proyectos Maven y con `jest --coverage` en el frontend. Ambas configuraciones tienen umbrales mínimos del 70% que fallan el build si no se cumplen.
+Con tests unitarios: 68 casos JavaScript (Jest) y 24 casos Java (JUnit 5 + Mockito). El Dockerfile del frontend tiene un stage `test` que ejecuta los tests durante el build — si fallan, no se genera imagen. Los tests Java validan controladores sin levantar contexto Spring, usando mocks del repositorio.
 
 ---
 
 ## Arquetipos Maven
 
-### Que es un Arquetipo Maven
+### Qué es un Arquetipo Maven
 
-Un arquetipo Maven es una plantilla de proyecto que define la estructura de directorios, el `pom.xml` base y las dependencias iniciales. Cuando se genera un proyecto con `spring-boot-starter-parent` como parent POM, Maven hereda la gestion de dependencias, plugins y configuracion de compilacion de Spring Boot, garantizando coherencia entre todos los microservicios del sistema.
+Un arquetipo Maven es una plantilla de proyecto que define la estructura de directorios, el `pom.xml` base y las dependencias iniciales. Cuando se genera un proyecto con `spring-boot-starter-parent` como parent POM, Maven hereda la gestión de dependencias, plugins y configuración de compilación de Spring Boot, garantizando coherencia entre todos los microservicios del sistema.
 
-En este proyecto, los tres microservicios Spring Boot comparten el mismo parent POM base, lo que significa que las versiones de librerias (Jackson, Tomcat, JUnit, etc.) estan coordinadas centralmente por Spring Boot y no requieren gestion manual en cada servicio.
+En este proyecto, los microservicios Spring Boot comparten el mismo parent POM base, lo que significa que las versiones de librerías (Jackson, Tomcat, JUnit, Mockito, etc.) están coordinadas centralmente por Spring Boot y no requieren gestión manual en cada servicio.
 
 ---
 
 ### Arquetipo base por microservicio
 
-Todos los microservicios Spring Boot del proyecto heredan de `spring-boot-starter-parent`, pero con versiones y dependencias distintas segun el rol de cada servicio:
+Todos los microservicios Spring Boot del proyecto heredan de `spring-boot-starter-parent`, pero con versiones y dependencias distintas según el rol de cada servicio:
 
 #### MS1-pos — Spring Boot 3.3.0 / Java 21
 
-**Parent POM real (ms1-pos/pom.xml):**
-```xml
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.0</version>
-</parent>
-<groupId>com.servicio1</groupId>
-<artifactId>demo</artifactId>
-```
-
 **Dependencias clave:** spring-boot-starter-web, spring-boot-starter-amqp (RabbitMQ), mysql-connector-j, spring-cloud-starter-circuitbreaker-resilience4j, lombok
 
-**Comando para generar un proyecto equivalente desde cero:**
+**Comando para generar un proyecto equivalente:**
 ```bash
 mvn archetype:generate \
-  -DgroupId=com.servicio1 \
-  -DartifactId=ms1-pos \
-  -DarchetypeArtifactId=maven-archetype-quickstart \
-  -DarchetypeVersion=1.4 \
+  -DgroupId=com.servicio1 -DartifactId=ms1-pos \
+  -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.4 \
   -DinteractiveMode=false
 ```
-Luego reemplazar el `pom.xml` generado con `spring-boot-starter-parent 3.3.0` como parent, o usar directamente Spring Initializr (start.spring.io) con las dependencias: Web, AMQP, MySQL Driver, Cloud Resilience4j.
-
----
 
 #### MS2-online — Spring Boot 3.2.1 / Java 17
 
-**Parent POM real (ms2-online/pom.xml):**
-```xml
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.1</version>
-</parent>
-<groupId>com.evaluacion</groupId>
-<artifactId>ms2-online</artifactId>
-```
-
 **Dependencias clave:** spring-boot-starter-web, lombok, spring-boot-starter-test
 
-**Comando para generar un proyecto equivalente desde cero:**
-```bash
-mvn archetype:generate \
-  -DgroupId=com.evaluacion \
-  -DartifactId=ms2-online \
-  -DarchetypeArtifactId=maven-archetype-quickstart \
-  -DarchetypeVersion=1.4 \
-  -DinteractiveMode=false
-```
-Alternativa recomendada con Spring Initializr: seleccionar Spring Boot 3.2.1, Java 17, dependencias Web y Lombok.
+#### MS3/MS4/MS5 — Spring Boot 3.2.x / Java 17
 
----
-
-#### orq-service — Spring Boot 3.2.1 / Java 17
-
-**Parent POM real (orq-service/pom.xml):**
-```xml
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.1</version>
-</parent>
-<groupId>com.evaluacion</groupId>
-<artifactId>orq-service</artifactId>
-```
-
-**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
-
-**Comando para generar un proyecto equivalente desde cero:**
-```bash
-mvn archetype:generate \
-  -DgroupId=com.evaluacion \
-  -DartifactId=orq-service \
-  -DarchetypeArtifactId=maven-archetype-quickstart \
-  -DarchetypeVersion=1.4 \
-  -DinteractiveMode=false
-```
-
----
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-data-jpa, h2, spring-boot-starter-test, mockito-core
 
 #### bff-service — Spring Boot 3.2.1 / Java 17
 
-**Parent POM real (bff-service/pom.xml):**
-```xml
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.1</version>
-</parent>
-<groupId>com.evaluacion</groupId>
-<artifactId>bff-service</artifactId>
-```
-
 **Dependencias clave:** spring-boot-starter-web, spring-boot-starter-test
 
-**Comando para generar un proyecto equivalente desde cero:**
-```bash
-mvn archetype:generate \
-  -DgroupId=com.evaluacion \
-  -DartifactId=bff-service \
-  -DarchetypeArtifactId=maven-archetype-quickstart \
-  -DarchetypeVersion=1.4 \
-  -DinteractiveMode=false
-```
+#### ms-auth — Spring Boot 3.2.x / Java 17
 
----
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-data-jpa, h2, spring-boot-starter-test
 
 #### frontend-app — Node.js (sin Maven)
 
-El frontend no usa Maven sino NPM como gestor de dependencias. El equivalente al arquetipo en el ecosistema Node.js es `npm init`:
+El frontend no usa Maven sino NPM como gestor de dependencias:
 
 ```bash
 npm init -y
@@ -537,57 +661,39 @@ npm install express
 npm install --save-dev jest
 ```
 
-**package.json base real:**
-```json
-{
-  "name": "frontend-app",
-  "version": "1.0.0",
-  "dependencies": { "express": "^4.18.2" },
-  "devDependencies": { "jest": "^29.7.0" }
-}
-```
-
 ---
 
-### Por que spring-boot-starter-parent garantiza coherencia y escalabilidad
+### Por qué spring-boot-starter-parent garantiza coherencia y escalabilidad
 
-**1. Gestion centralizada de versiones**
+**1. Gestión centralizada de versiones**
 
-El parent POM de Spring Boot define las versiones de mas de 300 dependencias comunes (Jackson, Tomcat, JUnit, Mockito, Log4j, etc.). Todos los microservicios que heredan de la misma version obtienen exactamente las mismas versiones de librerias transitivas, eliminando el clasico problema de "dependency hell" donde dos servicios usan versiones incompatibles de la misma libreria.
+El parent POM de Spring Boot define las versiones de más de 300 dependencias comunes (Jackson, Tomcat, JUnit, Mockito, Log4j, etc.). Todos los microservicios que heredan de la misma versión obtienen exactamente las mismas versiones de librerías transitivas, eliminando el clásico "dependency hell".
 
 ```xml
-<!-- No es necesario especificar version — la hereda del parent -->
+<!-- No es necesario especificar versión — la hereda del parent -->
 <dependency>
     <groupId>com.fasterxml.jackson.core</groupId>
     <artifactId>jackson-databind</artifactId>
 </dependency>
 ```
 
-**2. Configuracion de compilacion estandarizada**
+**2. Configuración de compilación estandarizada**
 
-El parent configura automaticamente:
-- `maven-compiler-plugin` con la version de Java correcta
-- `maven-surefire-plugin` para ejecutar tests con JUnit 5
-- `spring-boot-maven-plugin` para empaquetar el JAR ejecutable (fat JAR)
-- Encoding UTF-8 en todos los archivos fuente
+El parent configura automáticamente `maven-compiler-plugin`, `maven-surefire-plugin` (JUnit 5), `spring-boot-maven-plugin` (fat JAR) y encoding UTF-8. `mvn package` produce el mismo tipo de artefacto en todos los servicios.
 
-Esto garantiza que `mvn package` produce el mismo tipo de artefacto en todos los servicios: un JAR autocontenido que puede ejecutarse con `java -jar app.jar`.
+**3. Actualizaciones coordinadas**
 
-**3. Escalabilidad del equipo**
-
-Cuando un nuevo integrante necesita crear un microservicio adicional (por ejemplo, un MS3 para inventario), basta con replicar el mismo parent POM y agregar solo las dependencias especificas de ese servicio. La estructura de directorios, la configuracion de tests y el empaquetado son identicos a los servicios existentes, reduciendo la curva de aprendizaje.
-
-**4. Actualizaciones coordinadas**
-
-Cambiar la version de Spring Boot en un microservicio es un cambio de una sola linea en el parent. Todas las dependencias transitivas se actualizan automaticamente a las versiones compatibles certificadas por el equipo de Spring. Esto es especialmente importante en contextos de seguridad: cuando se publica un CVE en una libreria, actualizar el parent a la siguiente version de Spring Boot corrige todas las vulnerabilidades en todos los modulos del ecosistema.
+Cambiar la versión de Spring Boot en un microservicio es un cambio de una sola línea en el parent. Cuando se publica un CVE en una librería, actualizar el parent corrige las vulnerabilidades en todos los módulos.
 
 **Tabla resumen de arquetipos por servicio:**
 
-| Servicio | Parent / Base | Version Spring Boot | Java | Dependencias adicionales |
+| Servicio | Base | Versión Spring Boot | Java | Dependencias adicionales |
 |---|---|---|---|---|
 | ms1-pos | spring-boot-starter-parent | 3.3.0 | 21 | AMQP, MySQL, Resilience4j, Lombok |
 | ms2-online | spring-boot-starter-parent | 3.2.1 | 17 | Lombok |
-| orq-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
+| ms3/ms4/ms5 | spring-boot-starter-parent | 3.2.x | 17 | JPA, H2 |
+| ms-auth | spring-boot-starter-parent | 3.2.x | 17 | JPA, H2 |
+| orq-datos/ind/rep | spring-boot-starter-parent | 3.2.x | 17 | JPA, H2 |
 | bff-service | spring-boot-starter-parent | 3.2.1 | 17 | — |
 | frontend-app | npm (Node.js 18) | — | — | Express, Jest |
 
@@ -600,5 +706,8 @@ Cambiar la version de Spring Boot en un microservicio es un cambio de una sola l
 - Richardson, C. (2018). *Microservices Patterns.* Manning Publications.
 - Bloch, J. (2018). *Effective Java, 3rd Edition.* Addison-Wesley. (Item 3: Singleton con Holder Pattern)
 - OWASP. (2023). *Logging Cheat Sheet.* owasp.org/www-project-cheat-sheets
+- Spring. (2024). *Spring Data JPA Reference Documentation.* docs.spring.io/spring-data/jpa/reference
+- JUnit 5. (2024). *JUnit 5 User Guide.* junit.org/junit5/docs/current/user-guide
+- Mockito. (2024). *Mockito Documentation.* javadoc.io/doc/org.mockito/mockito-core
 - Apache Maven. (2024). *Maven Archetype Plugin.* maven.apache.org/archetype/maven-archetype-plugin
 - Spring. (2024). *Spring Boot Starter Parent.* docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.build-systems.maven
