@@ -10,6 +10,23 @@ App.Usuarios = (() => {
   let lista     = [...SEED];
   let nextId    = 3;
 
+  function canChangeRole(u) {
+    const session = App.Auth.getSession();
+    return session?.role === 'admin' || session?.username === 'admin';
+  }
+
+  function getRolSelector(u) {
+    return `
+      <select class="rol-inline-select" id="rol-select-${u.id}"
+        onchange="App.Usuarios.cambiarRol(${u.id}, this.value)">
+        <option value="USER"      ${u.role === 'USER'      ? 'selected' : ''}>Usuario</option>
+        <option value="ADMIN"     ${u.role === 'ADMIN'     ? 'selected' : ''}>Admin</option>
+        <option value="EJECUTIVO" ${u.role === 'EJECUTIVO' ? 'selected' : ''}>Ejecutivo</option>
+        <option value="ANALISTA"  ${u.role === 'ANALISTA'  ? 'selected' : ''}>Analista</option>
+      </select>
+    `;
+  }
+
   function renderTabla() {
     const el = document.getElementById('users-table');
     if (!el) return;
@@ -30,11 +47,17 @@ App.Usuarios = (() => {
                 <td><span class="badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary'}">${u.role}</span></td>
                 <td><span class="badge badge-success">${u.estado}</span></td>
                 <td>
-                  ${u.real
-                    ? '<span class="text-muted small">Sistema</span>'
-                    : `<button onclick="App.Usuarios.eliminar(${u.id})" class="btn btn-danger btn-sm">
-                        ${App.Icons?.trash || ''} Eliminar
-                      </button>`}
+                  ${canChangeRole(u)
+                    ? `<div style="display:flex;gap:6px;align-items:center">
+                        ${getRolSelector(u)}
+                        ${!u.real
+                          ? `<button onclick="App.Usuarios.eliminar(${u.id})"
+                              class="btn btn-danger btn-sm" title="Eliminar">
+                              ${App.Icons?.trash || ''} Eliminar
+                             </button>`
+                          : ''}
+                       </div>`
+                    : '<span class="text-muted small">Sistema</span>'}
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -154,6 +177,22 @@ App.Usuarios = (() => {
       msgEl.innerHTML = '<p class="success-msg">Usuario creado (solo en memoria de esta sesión).</p>';
       setTimeout(() => { if (msgEl) msgEl.innerHTML = ''; }, 3500);
       renderTabla();
+    },
+
+    cambiarRol(id, nuevoRol) {
+      const session = App.Auth.getSession();
+      if (session?.role !== 'admin' && session?.username !== 'admin') return;
+      const u = lista.find(u => u.id === id);
+      if (!u) return;
+      u.role = nuevoRol;
+      renderTabla();
+      const msg = document.getElementById('u-msg');
+      if (msg) {
+        msg.innerHTML = `<span class="badge badge-success">
+          Rol de ${u.username} cambiado a ${nuevoRol}
+        </span>`;
+        setTimeout(() => { if (msg) msg.innerHTML = ''; }, 3000);
+      }
     },
 
     eliminar(id) {

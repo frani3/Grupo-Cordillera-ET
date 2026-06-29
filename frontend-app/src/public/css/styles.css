@@ -1719,3 +1719,29 @@ tbody tr:hover td { background: var(--accent-light); }
   padding-left: 20px;
   margin-left: auto;
 }
+
+/* ── Selector de rol inline en tabla de usuarios ─────────────────────── */
+.rol-inline-select {
+  padding: 4px 28px 4px 8px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background-color: var(--white);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+.rol-inline-select:hover {
+  border-color: var(--accent);
+}
+.rol-inline-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
+}

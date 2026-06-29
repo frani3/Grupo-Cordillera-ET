@@ -8,19 +8,24 @@ App.Datos = (() => {
   ];
 
   const TABS = [
-    { id: 'ventas',     label: 'Ventas'             },
-    { id: 'inventario', label: 'Inventario'          },
-    { id: 'empleados',  label: 'Empleados'           },
-    { id: 'eventos',    label: 'Eventos Financieros' },
+    { id: 'ventas-tienda', label: 'Ventas Tienda'      },
+    { id: 'ventas-online', label: 'Ventas Online'       },
+    { id: 'inventario',    label: 'Inventario'          },
+    { id: 'empleados',     label: 'Empleados'           },
+    { id: 'eventos',       label: 'Eventos Financieros' },
   ];
 
   const COLUMNS = {
-    ventas: [
-      { key: 'transactionId', label: 'ID',      fmt: v => v ?? '—' },
-      { key: 'canal',      label: 'Canal',      fmt: v => v ?? '—' },
-      { key: 'sucursal',   label: 'Sucursal',   fmt: v => v ?? '—' },
-      { key: 'montoTotal', label: 'Monto',      fmt: v => '$' + parseFloat(v || 0).toLocaleString('es-CL') },
-      { key: 'fecha',      label: 'Fecha',      fmt: v => fmtDate(v) },
+    'ventas-tienda': [
+      { key: 'transactionId', label: 'ID',       fmt: v => v ?? '—' },
+      { key: 'sucursal',      label: 'Sucursal', fmt: v => v ?? '—' },
+      { key: 'montoTotal',    label: 'Monto',    fmt: v => '$' + parseFloat(v || 0).toLocaleString('es-CL') },
+      { key: 'fecha',         label: 'Fecha',    fmt: v => fmtDate(v) },
+    ],
+    'ventas-online': [
+      { key: 'transactionId', label: 'ID',    fmt: v => v ?? '—' },
+      { key: 'montoTotal',    label: 'Monto', fmt: v => '$' + parseFloat(v || 0).toLocaleString('es-CL') },
+      { key: 'fecha',         label: 'Fecha', fmt: v => fmtDate(v) },
     ],
     inventario: [
       { key: 'itemId',        label: 'ID Item',    fmt: v => v ?? '—' },
@@ -51,13 +56,14 @@ App.Datos = (() => {
 
   // Mapeo tab → método App.Facade (Patrón Facade en browser)
   const FACADE_MAP = {
-    ventas:     () => App.Facade.getVentas(),
-    inventario: () => App.Facade.getInventario(),
-    empleados:  () => App.Facade.getEmpleados(),
-    eventos:    () => App.Facade.getEventos(),
+    'ventas-tienda': () => App.Facade.getVentas(),
+    'ventas-online': () => App.Facade.getVentas(),
+    inventario:      () => App.Facade.getInventario(),
+    empleados:       () => App.Facade.getEmpleados(),
+    eventos:         () => App.Facade.getEventos(),
   };
 
-  let activeTab     = 'ventas';
+  let activeTab     = 'ventas-tienda';
   let allData       = [];
   let filteredData  = [];
   let currentPage   = 1;
@@ -78,10 +84,15 @@ App.Datos = (() => {
     } catch { return []; }
   }
 
-function getSearchFields(tab) {
+  function getSearchFields(tab) {
     const base = [{ value: '', label: 'Todos los campos' }];
     const byTab = {
-      ventas: [
+      'ventas-tienda': [
+        { value: 'transactionId', label: 'ID'       },
+        { value: 'montoTotal',    label: 'Monto'    },
+        { value: 'sucursal',      label: 'Sucursal' },
+      ],
+      'ventas-online': [
         { value: 'transactionId', label: 'ID'    },
         { value: 'montoTotal',    label: 'Monto' },
       ],
@@ -107,17 +118,7 @@ function getSearchFields(tab) {
 
   function filterControls(tab) {
     let extraFilter = '';
-    if (tab === 'ventas') {
-      extraFilter = UI.dropdown({
-        id: 'fc-canal',
-        placeholder: 'Canal',
-        options: [
-          { value: '', label: 'Canal (todos)' },
-          { value: 'Tienda Física', label: 'Tienda Física' },
-          { value: 'Online', label: 'Online' },
-        ],
-      });
-    } else if (tab === 'inventario') {
+    if (tab === 'inventario') {
       extraFilter = UI.dropdown({
         id: 'fc-categoria',
         placeholder: 'Categoría',
@@ -158,14 +159,16 @@ function getSearchFields(tab) {
 
     return `
       <div class="filter-pill-bar" id="filter-pill-bar">
-        ${UI.dropdown({
-          id: 'fc-sucursal',
-          placeholder: 'Sucursal',
-          options: [
-            { value: '', label: 'Todas las sucursales' },
-            ...SUCURSALES.map(s => ({ value: s, label: s })),
-          ],
-        })}
+        ${tab !== 'ventas-online'
+          ? UI.dropdown({
+              id: 'fc-sucursal',
+              placeholder: 'Sucursal',
+              options: [
+                { value: '', label: 'Todas las sucursales' },
+                ...SUCURSALES.map(s => ({ value: s, label: s })),
+              ],
+            })
+          : ''}
         ${UI.datePicker({ id: 'fc-dates', fromId: 'fc-desde', toId: 'fc-hasta', label: 'Fecha' })}
         ${extraFilter}
         <div class="filter-pill-sep"></div>
@@ -189,51 +192,61 @@ function getSearchFields(tab) {
     const suc   = document.getElementById('fc-sucursal')?.value;
     const desde = document.getElementById('fc-desde')?.value;
     const hasta = document.getElementById('fc-hasta')?.value;
-    const extra = document.getElementById('fc-canal')?.value
-               || document.getElementById('fc-categoria')?.value
+    const extra = document.getElementById('fc-categoria')?.value
                || document.getElementById('fc-turno')?.value
                || document.getElementById('fc-tipo')?.value;
 
     const badges = [];
-    if (suc)          badges.push(`<span class="filter-badge">${suc} <span onclick="App.Datos.clearFilter('fc-sucursal')">×</span></span>`);
-    if (desde || hasta) badges.push(`<span class="filter-badge">${desde || '…'} → ${hasta || '…'} <span onclick="App.Datos.clearFilter('fc-dates')">×</span></span>`);
-    if (extra)        badges.push(`<span class="filter-badge">${extra} <span onclick="App.Datos.clearFilter('extra')">×</span></span>`);
+    if (suc && activeTab !== 'ventas-online')
+      badges.push(`<span class="filter-badge">${suc} <span onclick="App.Datos.clearFilter('fc-sucursal')">×</span></span>`);
+    if (desde || hasta)
+      badges.push(`<span class="filter-badge">${desde || '…'} → ${hasta || '…'} <span onclick="App.Datos.clearFilter('fc-dates')">×</span></span>`);
+    if (extra)
+      badges.push(`<span class="filter-badge">${extra} <span onclick="App.Datos.clearFilter('extra')">×</span></span>`);
     badgesEl.innerHTML = badges.join('');
   }
 
   function computeFilters() {
-    const suc   = document.getElementById('fc-sucursal')?.value || '';
-    const desde = document.getElementById('fc-desde')?.value   || '';
-    const hasta = document.getElementById('fc-hasta')?.value   || '';
-    const canal = activeTab === 'ventas'
-      ? (document.getElementById('fc-canal')?.value || '') : '';
+    const desde = document.getElementById('fc-desde')?.value || '';
+    const hasta = document.getElementById('fc-hasta')?.value || '';
 
-    let result = allData.filter(r => {
-      // En ventas, los registros Online no tienen sucursal física:
-      // solo se excluyen si tienen una sucursal distinta a la seleccionada.
-      if (suc) {
-        const esOnlineSinSucursal = activeTab === 'ventas' && !r.sucursal;
-        if (!esOnlineSinSucursal && r.sucursal !== suc) return false;
-      }
-      if (desde || hasta) {
+    let result = [...allData];
+
+    // Pre-filtro por canal según tab (implícito, no hay dropdown de canal)
+    if (activeTab === 'ventas-tienda') {
+      result = result.filter(r => r.canal === 'Tienda Física');
+    } else if (activeTab === 'ventas-online') {
+      result = result.filter(r => r.canal === 'Online');
+    }
+
+    // Filtro de sucursal (no aplica a ventas-online, que no tiene sucursal)
+    const suc = document.getElementById('fc-sucursal')?.value || '';
+    if (suc && activeTab !== 'ventas-online') {
+      result = result.filter(r => r.sucursal === suc);
+    }
+
+    // Filtro de fechas
+    if (desde || hasta) {
+      result = result.filter(r => {
         const d = new Date(r.fecha);
         if (desde && d < new Date(desde)) return false;
         if (hasta && d > new Date(hasta + 'T23:59:59')) return false;
-      }
-      return true;
-    });
+        return true;
+      });
+    }
 
-    if (activeTab === 'ventas') {
-      if (canal) result = result.filter(r => r.canal === canal);
-    } else if (activeTab === 'inventario') {
-      const cat = document.getElementById('fc-categoria')?.value || '';
-      if (cat) result = result.filter(r => r.categoria === cat);
-    } else if (activeTab === 'empleados') {
-      const t = document.getElementById('fc-turno')?.value;
-      if (t) result = result.filter(r => r.turno === t);
-    } else if (activeTab === 'eventos') {
-      const t = document.getElementById('fc-tipo')?.value;
-      if (t) result = result.filter(r => r.tipo === t);
+    // Filtros extra por tab (categoria / turno / tipo)
+    const extra = document.getElementById('fc-categoria')?.value
+               || document.getElementById('fc-turno')?.value
+               || document.getElementById('fc-tipo')?.value
+               || '';
+    if (extra) {
+      if (activeTab === 'inventario')
+        result = result.filter(r => r.categoria === extra);
+      else if (activeTab === 'empleados')
+        result = result.filter(r => r.turno === extra);
+      else if (activeTab === 'eventos')
+        result = result.filter(r => r.tipo === extra);
     }
 
     if (searchQuery) {
@@ -345,7 +358,7 @@ function getSearchFields(tab) {
   return {
     async init(cont) {
       container   = cont;
-      activeTab   = 'ventas';
+      activeTab   = 'ventas-tienda';
       currentPage = 1;
       renderShell();
       UI.onSelect('fc-search-field', campo => {

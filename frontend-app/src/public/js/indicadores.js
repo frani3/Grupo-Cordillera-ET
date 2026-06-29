@@ -86,9 +86,9 @@ App.Indicadores = (() => {
       label:   'Productos en Stock',
       format:  v => v.toLocaleString('es-CL'),
       subtext: data => data.stockCritico > 0
-        ? `${data.stockCritico} productos con stock crítico (menos de 10 unidades)`
-        : 'Sin stock crítico',
-      tooltip: 'Cantidad de ítems registrados en inventario para esta vista. Stock crítico = ítems con menos de 10 unidades. Datos de MS3-Inventario.',
+        ? `⚠ ${data.stockCritico} productos bajo el mínimo de stock`
+        : '✓ Todos los productos sobre el mínimo',
+      tooltip: 'Cantidad de productos cuyo stock está por debajo del umbral mínimo configurado. El umbral se puede ajustar con "Configurar". Datos obtenidos de MS3-Inventario.',
     },
     {
       id:      'promedioHoras',
@@ -177,7 +177,8 @@ App.Indicadores = (() => {
       .filter(r => r.canal === 'Online')
       .reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
     const itemsInventario     = i.length;
-    const stockCritico        = i.filter(r => (parseInt(r.cantidad) || 0) < 10).length;
+    const umbralStock         = thresholds['itemsInventario'] ?? DEFAULTS['itemsInventario'] ?? 50;
+    const stockCritico        = i.filter(r => (parseInt(r.cantidad) || 0) < umbralStock).length;
     const totalEmpleados      = e.length;
     const totalHoras          = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
     const promedioHoras       = totalEmpleados > 0 ? totalHoras / totalEmpleados : 0;
@@ -450,7 +451,12 @@ App.Indicadores = (() => {
       if (subEl && k.subtext) subEl.textContent = k.subtext(values, sucursalFiltro);
 
       if (!k.noThreshold) {
-        const ok = (parseFloat(raw) || 0) >= (thresholds[k.id] ?? 0);
+        let ok;
+        if (k.id === 'itemsInventario') {
+          ok = values.stockCritico === 0;
+        } else {
+          ok = (parseFloat(raw) || 0) >= (thresholds[k.id] ?? 0);
+        }
         if (semEl) {
           semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
           semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
