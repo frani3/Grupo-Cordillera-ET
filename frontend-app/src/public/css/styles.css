@@ -45,6 +45,7 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Sego
 a { text-decoration: none; color: inherit; }
 button { cursor: pointer; font-family: inherit; font-size: 13px; }
 input, select, textarea { font-family: inherit; font-size: 13px; }
+select { appearance: none; -webkit-appearance: none; -moz-appearance: none; font-family: inherit; }
 table { border-collapse: collapse; width: 100%; }
 .view { height: 100vh; }
 .hidden { display: none !important; }
@@ -366,19 +367,21 @@ table { border-collapse: collapse; width: 100%; }
   padding: 10px 14px;
   border: 1.5px solid var(--gray-200);
   border-radius: var(--radius-sm);
-  background: var(--white);
+  background-color: var(--white);
   color: var(--text);
   font-size: 13px;
   transition: border-color var(--transition), box-shadow var(--transition);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
 }
 .form-group select {
+  background-color: var(--white);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  padding-right: 32px;
+  padding-right: 34px;
   cursor: pointer;
 }
 .form-group input:focus,
@@ -682,34 +685,42 @@ table { border-collapse: collapse; width: 100%; }
   flex-shrink: 0;
 }
 .filter-bar select,
+.filter-row select,
 .filter-bar input[type="text"],
-.filter-bar input[type="date"] {
+.filter-bar input[type="date"],
+.filter-row input[type="date"] {
   padding: 8px 12px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--gray-300);
   border-radius: var(--radius-sm);
-  background: var(--white);
+  background-color: var(--white);
   font-size: 13px;
   color: var(--text);
+  font-family: inherit;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
   transition: border-color var(--transition), box-shadow var(--transition);
   height: 38px;
+  box-shadow: var(--shadow-sm);
 }
-.filter-bar select {
+.filter-bar select,
+.filter-row select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  padding-right: 30px;
+  padding-right: 32px;
   cursor: pointer;
 }
-.filter-bar input[type="date"] { cursor: pointer; }
 .filter-bar select:hover,
-.filter-bar input:hover { border-color: var(--gray-300); }
+.filter-row select:hover { border-color: var(--accent); }
 .filter-bar select:focus,
-.filter-bar input:focus {
+.filter-row select:focus,
+.filter-bar input:focus,
+.filter-row input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+  outline: none;
 }
 
 /* ── 17. Tablas ──────────────────────────────────────────────────────────── */
@@ -1095,20 +1106,21 @@ tbody tr:hover td { background: var(--accent-light); }
   font-size: 13px;
   font-weight: 500;
   padding: 7px 32px 7px 12px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--gray-300);
   border-radius: var(--radius-sm);
   color: var(--text);
-  background: var(--white);
+  background-color: var(--white);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
   cursor: pointer;
   transition: var(--transition);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
+  -moz-appearance: none;
   min-width: 180px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
 }
 #kpi-sucursal:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.08); }
 #kpi-sucursal:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
