@@ -82,32 +82,24 @@ function getSearchFields(tab) {
     const base = [{ value: '', label: 'Todos los campos' }];
     const byTab = {
       ventas: [
-        { value: 'transactionId', label: 'ID'       },
-        { value: 'sucursal',      label: 'Sucursal' },
-        { value: 'canal',         label: 'Canal'    },
-        { value: 'montoTotal',    label: 'Monto'    },
-        { value: 'fecha',         label: 'Fecha'    },
+        { value: 'transactionId', label: 'ID'    },
+        { value: 'montoTotal',    label: 'Monto' },
       ],
       inventario: [
-        { value: 'itemId',         label: 'ID'        },
-        { value: 'nombre',         label: 'Nombre'    },
-        { value: 'categoria',      label: 'Categoría' },
-        { value: 'sucursal',       label: 'Sucursal'  },
-        { value: 'cantidad',       label: 'Cantidad'  },
-        { value: 'precioUnitario', label: 'Precio'    },
+        { value: 'itemId',         label: 'ID'       },
+        { value: 'nombre',         label: 'Nombre'   },
+        { value: 'cantidad',       label: 'Cantidad' },
+        { value: 'precioUnitario', label: 'Precio'   },
       ],
       empleados: [
-        { value: 'empleadoId', label: 'ID'       },
-        { value: 'nombre',     label: 'Nombre'   },
-        { value: 'sucursal',   label: 'Sucursal' },
-        { value: 'turno',      label: 'Turno'    },
+        { value: 'empleadoId',      label: 'ID'     },
+        { value: 'nombre',          label: 'Nombre' },
+        { value: 'horasTrabajadas', label: 'Horas'  },
       ],
       eventos: [
         { value: 'reporteId',   label: 'ID'          },
-        { value: 'tipo',        label: 'Tipo'        },
-        { value: 'sucursal',    label: 'Sucursal'    },
-        { value: 'monto',       label: 'Monto'       },
         { value: 'descripcion', label: 'Descripción' },
+        { value: 'monto',       label: 'Monto'       },
       ],
     };
     return [...base, ...(byTab[tab] || [])];
