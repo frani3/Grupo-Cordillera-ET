@@ -24,7 +24,6 @@
       "**/src/test/**/*.test.js"
     ],
     "collectCoverageFrom": [
-      "src/main/**/*.js",
       "src/services/**/*.js",
       "src/components/**/*.js",
       "!src/**/*.test.js"
