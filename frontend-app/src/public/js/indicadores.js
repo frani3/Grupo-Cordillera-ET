@@ -9,7 +9,6 @@ App.Indicadores = (() => {
     ventasPresencial: 2500000,
     ventasOnline:     2500000,
     ticketPromedio:     50000,
-    itemsInventario:       50,
     promedioHoras:          5,
     montoEventos:     3000000,
   };
@@ -80,16 +79,6 @@ App.Indicadores = (() => {
     },
 
     // ── Zona ops ───────────────────────────────────────────────────────────
-    {
-      id:      'itemsInventario',
-      zone:    'ops',
-      label:   'Productos en Stock',
-      format:  v => v.toLocaleString('es-CL'),
-      subtext: data => data.stockCritico > 0
-        ? `⚠ ${data.stockCritico} productos bajo el mínimo de stock`
-        : '✓ Todos los productos sobre el mínimo',
-      tooltip: 'Cantidad de productos cuyo stock está por debajo del umbral mínimo configurado. El umbral se puede ajustar con "Configurar". Datos obtenidos de MS3-Inventario.',
-    },
     {
       id:      'promedioHoras',
       zone:    'ops',
@@ -176,9 +165,6 @@ App.Indicadores = (() => {
     const ventasOnline        = v
       .filter(r => r.canal === 'Online')
       .reduce((s, r) => s + (parseFloat(r.montoTotal) || 0), 0);
-    const itemsInventario     = i.length;
-    const umbralStock         = thresholds['itemsInventario'] ?? DEFAULTS['itemsInventario'] ?? 50;
-    const stockCritico        = i.filter(r => (parseInt(r.cantidad) || 0) < umbralStock).length;
     const totalEmpleados      = e.length;
     const totalHoras          = e.reduce((s, r) => s + (parseFloat(r.horasTrabajadas) || 0), 0);
     const promedioHoras       = totalEmpleados > 0 ? totalHoras / totalEmpleados : 0;
@@ -222,8 +208,6 @@ App.Indicadores = (() => {
       rankingSucursal,
       rankingTotal,
       rankingPct,
-      itemsInventario,
-      stockCritico,
       totalEmpleados,
       promedioHoras,
       montoEventos,
@@ -451,12 +435,7 @@ App.Indicadores = (() => {
       if (subEl && k.subtext) subEl.textContent = k.subtext(values, sucursalFiltro);
 
       if (!k.noThreshold) {
-        let ok;
-        if (k.id === 'itemsInventario') {
-          ok = values.stockCritico === 0;
-        } else {
-          ok = (parseFloat(raw) || 0) >= (thresholds[k.id] ?? 0);
-        }
+        const ok = (parseFloat(raw) || 0) >= (thresholds[k.id] ?? 0);
         if (semEl) {
           semEl.className = `semaphore ${ok ? 'semaphore-green' : 'semaphore-red'}`;
           semEl.title     = ok ? 'OK — sobre umbral' : 'ALERTA — bajo umbral';
