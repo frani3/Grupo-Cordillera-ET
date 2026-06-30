@@ -1,0 +1,365 @@
+{
+  "info": {
+    "name": "Grupo Cordillera — API REST EP3",
+    "description": "Colección completa de endpoints. Base URL vía API Gateway (puerto 80). Ejecutar primero Auth/Login y guardar el token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway", "value": "http://localhost:80",  "type": "string" },
+    { "key": "token",   "value": "pegar-token-aqui",     "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticación",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "url":    "{{gateway}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body":   { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" }
+          },
+          "response": [
+            {
+              "name": "200 OK — Token generado",
+              "status": "OK",
+              "code": 200,
+              "body": "{\"token\":\"uuid-generado\",\"username\":\"admin\",\"timestamp\":\"2026-06-28T12:00:00\"}"
+            }
+          ]
+        },
+        {
+          "name": "Login Usuario",
+          "request": {
+            "method": "POST",
+            "url":    "{{gateway}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body":   { "mode": "raw", "raw": "{\"username\":\"usuario\",\"password\":\"user123\"}" }
+          }
+        },
+        {
+          "name": "Validar Token",
+          "request": {
+            "method": "POST",
+            "url":    "{{gateway}}/auth/validate",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK — Token válido",
+              "status": "OK",
+              "code": 200,
+              "body": "{\"valid\":true}"
+            },
+            {
+              "name": "401 — Token inválido",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\"error\":\"Token inválido o expirado\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. BFF — Dashboard y datos agregados",
+      "item": [
+        {
+          "name": "Dashboard completo",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/dashboard",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\"ventas\":[],\"indicadores\":{\"itemsInventario\":112,\"totalHorasTrabajadas\":740},\"reportes\":{\"totalEventos\":14,\"totalMonto\":5697044},\"timestamp\":\"2026-06-28T12:00:00\"}"
+            }
+          ]
+        },
+        {
+          "name": "Indicadores (ORQ-IND)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/indicadores",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Reportes (ORQ-REP)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/reportes",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. BFF — Datos crudos",
+      "item": [
+        {
+          "name": "Ventas (POS + Online)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/ventas",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[{\"transactionId\":\"TRX-POS-0001-1234\",\"canal\":\"Tienda Física\",\"sucursal\":\"Las Condes\",\"montoTotal\":29990,\"fecha\":\"2026-06-28\"}]"
+            }
+          ]
+        },
+        {
+          "name": "Inventario (MS3)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/datos/inventario",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Empleados (MS4)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/datos/empleados",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Eventos Financieros (MS5)",
+          "request": {
+            "method": "GET",
+            "url":    "{{gateway}}/api/proxy/datos/eventos",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. MS1 — POS (directo)",
+      "item": [
+        {
+          "name": "Registrar venta POS",
+          "request": {
+            "method": "POST",
+            "url":    "http://localhost:8081/api/pos/simulate-mq",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"transactionId\":\"TRX-POS-TEST-001\",\"monto_total\":29990,\"sucursal\":\"Las Condes\",\"fecha_hora\":\"2026-06-28T12:00:00\"}"
+            }
+          }
+        },
+        {
+          "name": "Listar ventas POS",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8081/api/pos/data"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. MS2 — Online (directo)",
+      "item": [
+        {
+          "name": "Registrar venta Online",
+          "request": {
+            "method": "POST",
+            "url":    "http://localhost:8083/api/online/venta",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"transactionId\":\"ONL-TEST-001\",\"monto_total\":89990,\"fecha_hora\":\"2026-06-28T12:00:00\"}"
+            }
+          }
+        },
+        {
+          "name": "Listar ventas Online",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8083/api/online/ventas"
+          }
+        },
+        {
+          "name": "Health MS2",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8083/api/online/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. MS3 — Inventario (directo)",
+      "item": [
+        {
+          "name": "Registrar ítem",
+          "request": {
+            "method": "POST",
+            "url":    "http://localhost:8084/api/inventario/item",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"item_id\":\"ITEM-TEST-001\",\"nombre\":\"Laptop Test\",\"categoria\":\"electronica\",\"cantidad\":10,\"precio_unitario\":899990,\"sucursal\":\"Las Condes\",\"fecha\":\"2026-06-28\"}"
+            }
+          }
+        },
+        {
+          "name": "Listar ítems inventario",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8084/api/inventario/items"
+          }
+        },
+        {
+          "name": "Health MS3",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8084/api/inventario/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. MS4 — Empleados (directo)",
+      "item": [
+        {
+          "name": "Registrar turno empleado",
+          "request": {
+            "method": "POST",
+            "url":    "http://localhost:8085/api/empleados/registro",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"empleado_id\":\"EMP-TEST-001\",\"nombre\":\"Ana Torres\",\"sucursal\":\"Las Condes\",\"turno\":\"manana\",\"horas_trabajadas\":8.0,\"fecha\":\"2026-06-28\"}"
+            }
+          }
+        },
+        {
+          "name": "Listar registros empleados",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8085/api/empleados/registros"
+          }
+        },
+        {
+          "name": "Health MS4",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8085/api/empleados/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. MS5 — Eventos Financieros (directo)",
+      "item": [
+        {
+          "name": "Registrar evento financiero",
+          "request": {
+            "method": "POST",
+            "url":    "http://localhost:8086/api/reportes/evento",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reporte_id\":\"REP-TEST-001\",\"tipo\":\"cierre-diario\",\"descripcion\":\"Cierre de caja Las Condes\",\"monto\":1500000,\"sucursal\":\"Las Condes\",\"fecha\":\"2026-06-28\"}"
+            }
+          }
+        },
+        {
+          "name": "Listar eventos financieros",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8086/api/reportes/eventos"
+          }
+        },
+        {
+          "name": "Health MS5",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8086/api/reportes/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. ORQ-DATOS — Estrategias",
+      "item": [
+        {
+          "name": "Consolidado BATCH",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8082/api/datos/consolidado?strategy=batch&id=test"
+          }
+        },
+        {
+          "name": "Consolidado STREAM",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8082/api/datos/consolidado?strategy=stream&id=test"
+          }
+        },
+        {
+          "name": "Consolidado CACHE",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8082/api/datos/consolidado?strategy=cache&id=test"
+          }
+        },
+        {
+          "name": "Health ORQ-DATOS",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8082/api/datos/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. ORQ-IND y ORQ-REP",
+      "item": [
+        {
+          "name": "Indicadores (ORQ-IND)",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8092/api/ind/indicadores"
+          }
+        },
+        {
+          "name": "Health ORQ-IND",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8092/api/ind/health"
+          }
+        },
+        {
+          "name": "Reportes (ORQ-REP)",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8093/api/rep/reportes"
+          }
+        },
+        {
+          "name": "Health ORQ-REP",
+          "request": {
+            "method": "GET",
+            "url":    "http://localhost:8093/api/rep/health"
+          }
+        }
+      ]
+    }
+  ]
+}

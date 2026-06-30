@@ -151,7 +151,7 @@ curl http://localhost:8086/api/reportes/health        # MS5
 docker build --target test --no-cache -t frontend-test frontend-app/
 ```
 
-Los tests se ejecutan durante el build del stage `test`. Si alguno falla, el build se detiene antes de generar la imagen de producción. Cobertura actual: ~87% statements, ~70% branches.
+Los tests se ejecutan durante el build del stage `test`. Si alguno falla, el build se detiene antes de generar la imagen de producción. Cobertura actual: 86.71% statements, 69.86% branches, 81.96% functions, 88.99% lines.
 
 ### Tests Java (JUnit + Mockito)
 

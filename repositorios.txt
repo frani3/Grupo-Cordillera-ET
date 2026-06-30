@@ -1,0 +1,36 @@
+# Repositorios GitHub — Grupo Cordillera EP3
+# DSY1106 Desarrollo Fullstack III
+
+## Repositorio Principal (monorepo)
+URL: https://github.com/frani3/Grupo-Cordillera-ET
+Rama: rama-e3
+Descripción: Repositorio principal con todos los componentes del
+sistema: frontend SPA, BFF, 5 microservicios de negocio,
+3 orquestadores, API Gateway Nginx, simuladores de datos,
+documentación completa y pruebas unitarias.
+
+## Componentes incluidos en el monorepo
+
+| Componente         | Carpeta           | Puerto | Tecnología           | Persistencia    |
+|--------------------|-------------------|--------|----------------------|-----------------|
+| Frontend SPA       | frontend-app/     | 3000   | Node.js + Express    | localStorage    |
+| API Gateway        | api-gateway/      | 80     | Nginx                | —               |
+| BFF Service        | bff-service/      | 8080   | Spring Boot (Java)   | —               |
+| MS Auth            | ms-auth/          | 8090   | Spring Boot (Java)   | JPA + H2        |
+| MS1 POS            | ms1-pos/          | 8081   | Spring Boot (Java)   | Singleton/RAM   |
+| MS2 Online         | ms2-online/       | 8083   | Spring Boot (Java)   | Singleton/RAM   |
+| MS3 Inventario     | ms3-inventario/   | 8084   | Spring Boot (Java)   | JPA + H2        |
+| MS4 Empleados      | ms4-empleados/    | 8085   | Spring Boot (Java)   | JPA + H2        |
+| MS5 Reportes       | ms5-reportes/     | 8086   | Spring Boot (Java)   | JPA + H2        |
+| ORQ Datos          | orq-datos/        | 8082   | Spring Boot (Java)   | JPA + H2        |
+| ORQ Indicadores    | orq-ind/          | 8092   | Spring Boot (Java)   | JPA + H2        |
+| ORQ Reportes       | orq-rep/          | 8093   | Spring Boot (Java)   | JPA + H2        |
+
+## Documentación en el repositorio
+- README.md            → Guía de inicio rápido y levantamiento
+- ARQUITECTURA.md      → Diagrama completo y decisiones de diseño
+- ANALISIS.md          → Justificación técnica de patrones GoF
+- PERSISTENCIA.md      → Implementación de persistencia JPA + H2
+- PRUEBAS_UNITARIAS.md → Informe de cobertura y métricas de testing
+- postman_collection.json → Colección completa de endpoints REST
+- frontend-app/coverage-report/ → Reporte HTML de cobertura Jest

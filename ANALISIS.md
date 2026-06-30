@@ -503,13 +503,13 @@ Los volúmenes Docker nombrados (`inventario-data`, `empleados-data`, `reportes-
 
 ### JavaScript — Jest (frontend-app)
 
-3 archivos de test, 68 casos, cobertura >70%:
+3 archivos de test, 68 casos, cobertura 86.71% statements / 69.86% branches:
 
 | Archivo | Casos | Qué verifica |
 |---|---|---|
-| `ApiServiceFactory.test.js` | 27 | Patrón Factory Method: resolución de tipos, configuración de entornos, extensibilidad con `register()`, errores por tipo/entorno desconocido |
-| `DataService.test.js` | 22 | Patrón Facade: delegación correcta a cada service, manejo de errores HTTP (401, 500) y errores de red |
-| `DataDisplay.test.js` | 19 | Consumidor del Facade: estados loading/error/data/empty, render por dominio, sanitización XSS |
+| `ApiServiceFactory.test.js` | 25 | Patrón Factory Method: resolución de tipos, configuración de entornos, extensibilidad con `register()`, errores por tipo/entorno desconocido |
+| `DataService.test.js` | 18 | Patrón Facade: delegación correcta a cada service, manejo de errores HTTP (401, 500) y errores de red |
+| `DataDisplay.test.js` | 25 | Consumidor del Facade: estados loading/error/data/empty, render por dominio, sanitización XSS |
 
 **Patrón de test con mockFetch:**
 ```javascript
@@ -536,14 +536,14 @@ RUN npm install --production   # sin devDependencies (jest, etc.)
 
 ### Java — JUnit 5 + Mockito
 
-4 archivos de test, 24 casos:
+4 archivos de test, 23 casos:
 
 | Clase test | Casos | Qué verifica |
 |---|---|---|
 | `InventarioControllerTest` | 6 | `listarItems()`, `recibirItem()` (válido, sin itemId, sin nombre, sin sucursal), `health()` |
 | `EmpleadoControllerTest` | 6 | `listarRegistros()`, `recibirRegistro()` (válido, sin empleadoId, sin turno, horas > 24), `health()` |
 | `ReporteControllerTest` | 6 | `listarEventos()`, `recibirEvento()` (válido, sin reporteId, sin tipo, monto negativo), `health()` |
-| `AuthControllerTest` | 6 | `login()` (válido/inválido), `validate()` (header Bearer/body/sin token), `health()` |
+| `AuthControllerTest` | 5 | `login()` (válido/inválido), `validate()` (token válido/inválido), `health()` |
 
 **Patrón de test — sin contexto Spring:**
 ```java
@@ -605,7 +605,7 @@ Un `switch` viola OCP: agregar un nuevo algoritmo requiere modificar el método.
 Los dominios tienen requisitos distintos. MS1/MS2 almacenan ventas de simulación que se regeneran en cada ciclo — perder datos al reiniciar es aceptable. MS3/MS4/MS5 almacenan inventario, empleados y eventos financieros que deben sobrevivir a reinicios del contenedor. La coexistencia de ambos enfoques es intencional: demuestra que la persistencia se elige según los requisitos del dominio, no por convención uniforme.
 
 **¿Cómo demuestran que el código funciona?**
-Con tests unitarios: 68 casos JavaScript (Jest) y 24 casos Java (JUnit 5 + Mockito). El Dockerfile del frontend tiene un stage `test` que ejecuta los tests durante el build — si fallan, no se genera imagen. Los tests Java validan controladores sin levantar contexto Spring, usando mocks del repositorio.
+Con tests unitarios: 68 casos JavaScript (Jest) y 23 casos Java (JUnit 5 + Mockito). El Dockerfile del frontend tiene un stage `test` que ejecuta los tests durante el build — si fallan, no se genera imagen. Los tests Java validan controladores sin levantar contexto Spring, usando mocks del repositorio.
 
 ---
 
