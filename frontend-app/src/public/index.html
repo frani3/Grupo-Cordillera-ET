@@ -64,6 +64,9 @@
     <div id="app-wrapper">
       <header id="app-header">
         <div class="header-left">
+          <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Abrir menú">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect y="2" width="16" height="1.5" rx=".75"/><rect y="7.25" width="16" height="1.5" rx=".75"/><rect y="12.5" width="16" height="1.5" rx=".75"/></svg>
+          </button>
           <span class="header-section-label">Módulo</span>
           <span class="header-sep"></span>
           <span id="header-breadcrumb" class="header-breadcrumb"></span>
@@ -79,6 +82,7 @@
       </main>
     </div>
 
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -91,5 +95,19 @@
   <script src="/js/reportes.js"></script>
   <script src="/js/usuarios.js"></script>
   <script src="/js/app.js"></script>
+  <script>
+    (function () {
+      var toggle  = document.getElementById('sidebar-toggle');
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      if (!toggle || !sidebar || !overlay) return;
+      function open()  { sidebar.classList.add('sidebar-open');    overlay.classList.add('active'); }
+      function close() { sidebar.classList.remove('sidebar-open'); overlay.classList.remove('active'); }
+      toggle.addEventListener('click', function () {
+        sidebar.classList.contains('sidebar-open') ? close() : open();
+      });
+      overlay.addEventListener('click', close);
+    })();
+  </script>
 </body>
 </html>

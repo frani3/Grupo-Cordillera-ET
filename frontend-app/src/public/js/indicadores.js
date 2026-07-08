@@ -257,16 +257,7 @@ App.Indicadores = (() => {
       }
     });
 
-    const visiblesMain = KPIS.filter(k =>
-      k.zone === 'main' &&
-      !(k.globalOnly   && sucursal) &&
-      !(k.sucursalOnly && !sucursal)
-    ).length;
-    const gridEl = document.getElementById('kpi-grid-main');
-    if (gridEl) {
-      gridEl.classList.toggle('kpi-grid-3col', visiblesMain <= 3);
-      gridEl.classList.toggle('kpi-grid-4col', visiblesMain >= 4);
-    }
+    // grid-template-columns manejado por CSS auto-fit — sin conteo manual de columnas
   }
 
   function renderCard(k) {
