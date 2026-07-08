@@ -319,26 +319,26 @@ App.Indicadores = (() => {
       <div class="kpi-grid kpi-grid-main" id="kpi-grid-main">
         ${main.map(renderCard).join('')}
       </div>
+      <div class="kpi-section-title kpi-section-ops">Métricas Operacionales</div>
+      <div class="kpi-grid kpi-grid-ops" id="kpi-grid-ops">
+        ${ops.map(renderCard).join('')}
+      </div>
       <div id="kpi-charts-section">
-        <div class="kpi-section-title">Análisis Visual</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px;">
-          <div class="kpi-card" style="padding:20px;">
-            <div class="kpi-label" style="display:block;margin-bottom:12px;font-weight:600;font-size:13px;">Ventas por Sucursal</div>
-            <div style="position:relative;height:260px;">
+        <div class="kpi-section-title kpi-section-charts">Análisis Visual</div>
+        <div class="kpi-charts-grid">
+          <div class="kpi-chart-card">
+            <div class="kpi-chart-title">Ventas por Sucursal</div>
+            <div class="kpi-chart-canvas-wrap">
               <canvas id="chart-sucursal"></canvas>
             </div>
           </div>
-          <div class="kpi-card" style="padding:20px;">
-            <div class="kpi-label" style="display:block;margin-bottom:12px;font-weight:600;font-size:13px;">Ventas Presencial vs Online</div>
-            <div style="position:relative;height:260px;">
+          <div class="kpi-chart-card">
+            <div class="kpi-chart-title">Ventas Presencial vs Online</div>
+            <div class="kpi-chart-canvas-wrap">
               <canvas id="chart-canal"></canvas>
             </div>
           </div>
         </div>
-      </div>
-      <div class="kpi-section-title kpi-section-ops">Métricas Operacionales</div>
-      <div class="kpi-grid kpi-grid-ops" id="kpi-grid-ops">
-        ${ops.map(renderCard).join('')}
       </div>
       <div id="kpi-ts" class="small text-muted"></div>
       <div class="threshold-log-section">
@@ -463,8 +463,8 @@ App.Indicadores = (() => {
         datasets: [{
           label:           'Ventas',
           data:            valores,
-          backgroundColor: 'rgba(59,130,246,0.75)',
-          borderColor:     'rgba(59,130,246,1)',
+          backgroundColor: 'rgba(37,99,168,0.75)',   // --blue-mid
+          borderColor:     '#2563a8',                 // --blue-mid
           borderWidth:     1,
           borderRadius:    4,
         }],
@@ -472,12 +472,20 @@ App.Indicadores = (() => {
       options: {
         responsive:          true,
         maintainAspectRatio: false,
+        layout: { padding: { top: 4, bottom: 4 } },
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: '#1a3a5c',    // --blue-dark
+            titleColor:      '#ffffff',
+            bodyColor:       '#e2e8f0',    // --gray-200
+            cornerRadius:    8,            // --radius-sm
+            padding:         10,
+            displayColors:   false,
             callbacks: {
               label: ctx => '$' + ctx.parsed.y.toLocaleString('es-CL'),
             },
+            bodyFont: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 12 },
           },
         },
         scales: {
@@ -486,12 +494,18 @@ App.Indicadores = (() => {
             ticks: {
               callback:      v => '$' + Math.round(v / 1000) + 'K',
               maxTicksLimit: 6,
+              font:          { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 11 },
+              color:         '#64748b',    // --gray-500
             },
             grid: { color: 'rgba(100,116,139,0.12)' },
           },
           x: {
-            ticks: { maxRotation: 45, font: { size: 11 } },
-            grid:  { display: false },
+            ticks: {
+              maxRotation: 45,
+              font:        { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 11 },
+              color:       '#64748b',    // --gray-500
+            },
+            grid: { display: false },
           },
         },
       },
@@ -513,8 +527,8 @@ App.Indicadores = (() => {
         labels: ['Tienda Física', 'Online'],
         datasets: [{
           data:            [presencial, online],
-          backgroundColor: ['rgba(59,130,246,0.8)', 'rgba(16,185,129,0.8)'],
-          borderColor:     ['rgba(59,130,246,1)',    'rgba(16,185,129,1)'],
+          backgroundColor: ['rgba(37,99,168,0.85)',  'rgba(34,197,94,0.85)'],   // --blue-mid, --green
+          borderColor:     ['#2563a8',                '#22c55e'],                // --blue-mid, --green
           borderWidth:     2,
           hoverOffset:     8,
         }],
@@ -522,12 +536,29 @@ App.Indicadores = (() => {
       options: {
         responsive:          true,
         maintainAspectRatio: false,
+        layout: { padding: 8 },
         plugins: {
-          legend: { display: true, position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.label + ': $' + ctx.parsed.toLocaleString('es-CL'),
+          legend: {
+            display:  true,
+            position: 'bottom',
+            labels: {
+              font:            { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 12 },
+              color:           '#475569',    // --gray-600
+              padding:         14,
+              usePointStyle:   true,
+              pointStyleWidth: 8,
             },
+          },
+          tooltip: {
+            backgroundColor: '#1a3a5c',    // --blue-dark
+            titleColor:      '#ffffff',
+            bodyColor:       '#e2e8f0',    // --gray-200
+            cornerRadius:    8,            // --radius-sm
+            padding:         10,
+            callbacks: {
+              label: ctx => ' ' + ctx.label + ': $' + ctx.parsed.toLocaleString('es-CL'),
+            },
+            bodyFont: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 12 },
           },
         },
       },

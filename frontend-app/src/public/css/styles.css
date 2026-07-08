@@ -1112,7 +1112,36 @@ tbody tr:hover td { background: var(--accent-light); }
   color: var(--text-light);
   margin: 0 0 14px 2px;
 }
-.kpi-section-ops { margin-top: 32px; }
+.kpi-section-ops    { margin-top: 32px; }
+.kpi-section-charts { margin-top: 28px; }
+.kpi-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.kpi-chart-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px 20px 16px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--blue-mid);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.kpi-chart-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.kpi-chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 14px;
+}
+.kpi-chart-canvas-wrap {
+  position: relative;
+  height: 260px;
+}
 .kpi-title-group { display: flex; flex-direction: column; gap: 6px; }
 .kpi-context-bar { display: flex; align-items: center; gap: 8px; }
 .kpi-context-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
