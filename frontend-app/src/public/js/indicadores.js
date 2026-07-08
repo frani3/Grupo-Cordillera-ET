@@ -110,6 +110,8 @@ App.Indicadores = (() => {
   let rawData          = { ventas: [], inventario: [], empleados: [], eventos: [] };
   let sucursalFiltro   = '';
   let _docClickHandler = null;
+  let _chartSucursal   = null;
+  let _chartCanal      = null;
 
   function getContextKey() {
     return sucursalFiltro || 'global';
@@ -317,6 +319,23 @@ App.Indicadores = (() => {
       <div class="kpi-grid kpi-grid-main" id="kpi-grid-main">
         ${main.map(renderCard).join('')}
       </div>
+      <div id="kpi-charts-section">
+        <div class="kpi-section-title">Análisis Visual</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px;">
+          <div class="kpi-card" style="padding:20px;">
+            <div class="kpi-label" style="display:block;margin-bottom:12px;font-weight:600;font-size:13px;">Ventas por Sucursal</div>
+            <div style="position:relative;height:260px;">
+              <canvas id="chart-sucursal"></canvas>
+            </div>
+          </div>
+          <div class="kpi-card" style="padding:20px;">
+            <div class="kpi-label" style="display:block;margin-bottom:12px;font-weight:600;font-size:13px;">Ventas Presencial vs Online</div>
+            <div style="position:relative;height:260px;">
+              <canvas id="chart-canal"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="kpi-section-title kpi-section-ops">Métricas Operacionales</div>
       <div class="kpi-grid kpi-grid-ops" id="kpi-grid-ops">
         ${ops.map(renderCard).join('')}
@@ -422,6 +441,113 @@ App.Indicadores = (() => {
     }
   }
 
+  function renderVentasPorSucursalChart(data) {
+    const canvas = document.getElementById('chart-sucursal');
+    if (!canvas) return;
+
+    const totales = {};
+    data.ventas.forEach(r => {
+      if (!r.sucursal) return;
+      totales[r.sucursal] = (totales[r.sucursal] || 0) + (parseFloat(r.montoTotal) || 0);
+    });
+    const sorted  = Object.entries(totales).sort((a, b) => b[1] - a[1]);
+    const labels  = sorted.map(([s]) => s);
+    const valores = sorted.map(([, v]) => Math.round(v));
+
+    if (_chartSucursal) { _chartSucursal.destroy(); _chartSucursal = null; }
+
+    _chartSucursal = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label:           'Ventas',
+          data:            valores,
+          backgroundColor: 'rgba(59,130,246,0.75)',
+          borderColor:     'rgba(59,130,246,1)',
+          borderWidth:     1,
+          borderRadius:    4,
+        }],
+      },
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => '$' + ctx.parsed.y.toLocaleString('es-CL'),
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback:      v => '$' + Math.round(v / 1000) + 'K',
+              maxTicksLimit: 6,
+            },
+            grid: { color: 'rgba(100,116,139,0.12)' },
+          },
+          x: {
+            ticks: { maxRotation: 45, font: { size: 11 } },
+            grid:  { display: false },
+          },
+        },
+      },
+    });
+  }
+
+  function renderVentasCanalChart(values) {
+    const canvas = document.getElementById('chart-canal');
+    if (!canvas) return;
+
+    const presencial = Math.round(values.ventasPresencial || 0);
+    const online     = Math.round(values.ventasOnline     || 0);
+
+    if (_chartCanal) { _chartCanal.destroy(); _chartCanal = null; }
+
+    _chartCanal = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Tienda Física', 'Online'],
+        datasets: [{
+          data:            [presencial, online],
+          backgroundColor: ['rgba(59,130,246,0.8)', 'rgba(16,185,129,0.8)'],
+          borderColor:     ['rgba(59,130,246,1)',    'rgba(16,185,129,1)'],
+          borderWidth:     2,
+          hoverOffset:     8,
+        }],
+      },
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.label + ': $' + ctx.parsed.toLocaleString('es-CL'),
+            },
+          },
+        },
+      },
+    });
+  }
+
+  function _updateChartsSection(data, values) {
+    const section = document.getElementById('kpi-charts-section');
+    if (!section) return;
+    if (sucursalFiltro) {
+      section.classList.add('hidden');
+      if (_chartSucursal) { _chartSucursal.destroy(); _chartSucursal = null; }
+      if (_chartCanal)    { _chartCanal.destroy();    _chartCanal    = null; }
+    } else {
+      section.classList.remove('hidden');
+      renderVentasPorSucursalChart(data);
+      renderVentasCanalChart(values);
+    }
+  }
+
   function applyValues(values) {
     currentValues = values;
     KPIS.forEach(k => {
@@ -491,6 +617,8 @@ App.Indicadores = (() => {
         document.removeEventListener('click', _docClickHandler);
         _docClickHandler = null;
       }
+      if (_chartSucursal) { _chartSucursal.destroy(); _chartSucursal = null; }
+      if (_chartCanal)    { _chartCanal.destroy();    _chartCanal    = null; }
     },
 
     async refresh() {
@@ -499,6 +627,7 @@ App.Indicadores = (() => {
         applyValues(computeValues(rawData, sucursalFiltro));
         updateKpiVisibility(sucursalFiltro);
         _flashUpdate();
+        _updateChartsSection(rawData, currentValues);
       } catch (err) {
         console.error('Error indicadores:', err);
       }
@@ -530,6 +659,7 @@ App.Indicadores = (() => {
       updateThresholdLabels();
       updateKpiVisibility(sucursalFiltro);
       applyValues(computeValues(rawData, sucursalFiltro));
+      _updateChartsSection(rawData, currentValues);
     },
 
     openConfig(kpiId) {
