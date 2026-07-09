@@ -6,7 +6,7 @@
   --blue-mid:     #3b5bdb;   /* azul más vivo para ranking bars, charts */
   --blue-light:   #60a5fa;
 
-  /* Acento principal — índigo Stripe-like */
+  /* Acento principal — índigo vibrante */
   --accent:       #4f46e5;
   --accent-light: #eef2ff;
 
@@ -37,7 +37,7 @@
   --text-muted:   #6b7280;
   --text-light:   #9ca3af;
 
-  /* Sombras más sutiles (Stripe-like) */
+  /* Sombras sutiles — jerarquía de elevación */
   --shadow-sm:    0 1px 2px rgba(0,0,0,.05);
   --shadow:       0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
   --shadow-lg:    0 8px 30px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
