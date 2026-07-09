@@ -325,7 +325,7 @@ App.Indicadores = (() => {
           </div>
           <div class="kpi-chart-card">
             <div class="kpi-chart-title">Ventas Presencial vs Online</div>
-            <div class="kpi-chart-canvas-wrap">
+            <div class="kpi-chart-canvas-wrap canvas-doughnut">
               <canvas id="chart-canal"></canvas>
             </div>
           </div>
@@ -454,49 +454,52 @@ App.Indicadores = (() => {
         datasets: [{
           label:           'Ventas',
           data:            valores,
-          backgroundColor: 'rgba(37,99,168,0.75)',   // --blue-mid
-          borderColor:     '#2563a8',                 // --blue-mid
-          borderWidth:     1,
-          borderRadius:    4,
+          backgroundColor: '#4f46e5',   // --accent
+          borderWidth:     0,
+          borderRadius:    { topRight: 5, bottomRight: 5 },
+          borderSkipped:   false,
+          maxBarThickness: 22,
         }],
       },
       options: {
+        indexAxis:           'y',
         responsive:          true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 4, bottom: 4 } },
+        layout: { padding: { right: 8 } },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1a3a5c',    // --blue-dark
+            backgroundColor: '#1f2937',    // --gray-800
             titleColor:      '#ffffff',
-            bodyColor:       '#e2e8f0',    // --gray-200
-            cornerRadius:    8,            // --radius-sm
+            bodyColor:       '#d1d5db',    // --gray-300
+            cornerRadius:    8,
             padding:         10,
             displayColors:   false,
             callbacks: {
-              label: ctx => '$' + ctx.parsed.y.toLocaleString('es-CL'),
+              label: ctx => '$' + ctx.parsed.x.toLocaleString('es-CL'),
             },
             bodyFont: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 12 },
           },
         },
         scales: {
-          y: {
+          x: {
             beginAtZero: true,
             ticks: {
               callback:      v => '$' + Math.round(v / 1000) + 'K',
-              maxTicksLimit: 6,
+              maxTicksLimit: 5,
               font:          { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 11 },
-              color:         '#64748b',    // --gray-500
+              color:         '#9ca3af',    // --text-light
             },
-            grid: { color: 'rgba(100,116,139,0.12)' },
+            grid: { color: 'rgba(0,0,0,.05)' },
+            border: { display: false },
           },
-          x: {
+          y: {
             ticks: {
-              maxRotation: 45,
-              font:        { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 11 },
-              color:       '#64748b',    // --gray-500
+              font:  { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 11 },
+              color: '#6b7280',            // --text-muted
             },
-            grid: { display: false },
+            grid:   { display: false },
+            border: { display: false },
           },
         },
       },
@@ -518,34 +521,37 @@ App.Indicadores = (() => {
         labels: ['Tienda Física', 'Online'],
         datasets: [{
           data:            [presencial, online],
-          backgroundColor: ['rgba(37,99,168,0.85)',  'rgba(34,197,94,0.85)'],   // --blue-mid, --green
-          borderColor:     ['#2563a8',                '#22c55e'],                // --blue-mid, --green
-          borderWidth:     2,
-          hoverOffset:     8,
+          backgroundColor: ['#4f46e5', '#22c55e'],   // --accent, --green
+          borderWidth:     0,
+          hoverOffset:     6,
         }],
       },
       options: {
         responsive:          true,
         maintainAspectRatio: false,
-        layout: { padding: 8 },
+        cutout:              '72%',
+        layout: { padding: 12 },
         plugins: {
           legend: {
             display:  true,
             position: 'bottom',
             labels: {
               font:            { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", size: 12 },
-              color:           '#475569',    // --gray-600
-              padding:         14,
+              color:           '#6b7280',    // --text-muted
+              padding:         20,
               usePointStyle:   true,
+              pointStyle:      'circle',
               pointStyleWidth: 8,
+              boxHeight:       8,
             },
           },
           tooltip: {
-            backgroundColor: '#1a3a5c',    // --blue-dark
+            backgroundColor: '#1f2937',    // --gray-800
             titleColor:      '#ffffff',
-            bodyColor:       '#e2e8f0',    // --gray-200
-            cornerRadius:    8,            // --radius-sm
+            bodyColor:       '#d1d5db',    // --gray-300
+            cornerRadius:    8,
             padding:         10,
+            displayColors:   false,
             callbacks: {
               label: ctx => ' ' + ctx.label + ': $' + ctx.parsed.toLocaleString('es-CL'),
             },
