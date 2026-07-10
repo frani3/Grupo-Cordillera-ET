@@ -69,6 +69,18 @@ Los tests JavaScript (Jest) se ejecutan durante el stage `test` del Dockerfile. 
 
 ---
 
+## Frontend — SPA
+
+Interfaz web construida en **vanilla JS** (sin framework), servida por Express como archivos estáticos.
+
+- **Sistema de diseño propio**: CSS Custom Properties con escala tipográfica (7 niveles), escala de espaciado (8 niveles) y 4 niveles de elevación. Sidebar claro con borde derecho, login sobre fondo gris claro.
+- **Dashboard KPIs**: semáforos animados, umbrales configurables por contexto (global / sucursal), log de cambios persistido en `localStorage`. Auto-refresh cada 15 segundos.
+- **Gráficos Chart.js 4.4.0**: barras horizontales (Ventas por Sucursal) y doughnut 72% cutout (Presencial vs Online), paleta alineada al token `--accent: #4f46e5`.
+- **Responsive**: sidebar completo ≥900px, icon-only 900–600px, off-canvas con overlay <600px.
+- **Módulos**: `App.Indicadores`, `App.Datos`, `App.Reportes`, `App.Usuarios`, `App.Facade`, `App.Auth`, `App.Router`.
+
+---
+
 ## Documentación
 
 | Archivo | Contenido |
@@ -76,3 +88,5 @@ Los tests JavaScript (Jest) se ejecutan durante el stage `test` del Dockerfile. 
 | `ARQUITECTURA.md` | Mapa de servicios, puertos, guía de prueba y health checks |
 | `ANALISIS.md` | Justificación técnica de los patrones de diseño GoF implementados |
 | `DEFENSA.md` | Guía de defensa oral: flujo completo, preguntas difíciles con respuesta |
+| `PERSISTENCIA.md` | Estrategia de persistencia: JPA+H2 vs Singleton en memoria |
+| `PRUEBAS_UNITARIAS.md` | Informe de tests: 68 casos JS (Jest) + 23 casos Java (JUnit 5 + Mockito) |

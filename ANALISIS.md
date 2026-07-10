@@ -128,6 +128,21 @@ El parámetro `overrides.fetcher` permite tests que **nunca hacen HTTP real**, e
 - **DIP (Dependency Inversion):** Los componentes dependen de `ApiServiceFactory` (abstracción), nunca de `DataService` directamente.
 - **SRP (Single Responsibility):** La factory crea; los servicios hacen HTTP; los componentes renderizan.
 
+### Sistema de diseño — SPA browser
+
+La capa browser implementa un sistema de diseño propio mediante **CSS Custom Properties** organizadas en tokens de tres niveles:
+
+**Tokens primitivos (`:root`):**
+- Escala tipográfica: `--text-xs` (11px) → `--text-2xl` (24px) — 7 tamaños
+- Escala de espaciado: `--space-1` (4px) → `--space-8` (32px) — 8 niveles
+- 4 niveles de elevación: `--shadow-xs`, `--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`, `--shadow-card`
+- Acento único: `--accent: #4f46e5` (índigo) — todos los estados interactivos heredan de este token
+
+**Decisiones técnicas relevantes:**
+- Grid KPI con `repeat(auto-fit, minmax(220px, 1fr))` — sin conteo JS de columnas; el layout se adapta a cualquier ancho de viewport.
+- Sidebar responsive: `font-size: 0` en `.nav-item` a ≤900px oculta el texto sin necesitar un elemento wrapper adicional (los SVG de ícono tienen dimensiones explícitas en px, no se ven afectados).
+- Chart.js no puede leer CSS custom properties en tiempo de render, por lo que los colores de los gráficos están expresados como literales hexadecimales que corresponden al valor del token (`#4f46e5` = `var(--accent)`).
+
 ### Alternativa Descartada: Abstract Factory
 
 Abstract Factory crea **familias** de objetos relacionados (ej: tema claro/oscuro). Para este sistema donde solo necesitamos variar configuración HTTP entre entornos, Abstract Factory añade clases innecesarias (viola el principio YAGNI). Factory Method es el mínimo que resuelve el problema de forma elegante.
@@ -507,9 +522,9 @@ Los volúmenes Docker nombrados (`inventario-data`, `empleados-data`, `reportes-
 
 | Archivo | Casos | Qué verifica |
 |---|---|---|
-| `ApiServiceFactory.test.js` | 25 | Patrón Factory Method: resolución de tipos, configuración de entornos, extensibilidad con `register()`, errores por tipo/entorno desconocido |
-| `DataService.test.js` | 18 | Patrón Facade: delegación correcta a cada service, manejo de errores HTTP (401, 500) y errores de red |
-| `DataDisplay.test.js` | 25 | Consumidor del Facade: estados loading/error/data/empty, render por dominio, sanitización XSS |
+| `ApiServiceFactory.test.js` | 29 | Patrón Factory Method: 10 tipos de servicio vía `test.each`, configuración de entornos, extensibilidad con `register()`, errores por tipo/entorno desconocido, métodos `get()`/`post()` de `DataService`, derived-queries de `VentasService` e `IndicadoresService` |
+| `DataService.test.js` | 19 | Patrón Facade: delegación correcta a cada service, manejo de errores HTTP (401, 500) y errores de red |
+| `DataDisplay.test.js` | 20 | Consumidor del Facade: estados loading/error/data/empty, render por dominio, sanitización XSS |
 
 **Patrón de test con mockFetch:**
 ```javascript

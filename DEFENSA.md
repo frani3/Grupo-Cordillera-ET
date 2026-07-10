@@ -505,6 +505,41 @@ App.Usuarios= (() => { /* ... */ })();
 
 **`App.Auth`:** gestiona la sesión en `sessionStorage`. `handleLogin()` hace `POST /api/login`, recibe el token, llama `setSession()` y luego `App.Router.showApp()`.
 
+### 6.2.1 Sistema de diseño — `css/styles.css`
+
+La SPA implementa un sistema de diseño propio basado en **CSS Custom Properties** (tokens de diseño), organizado en 31 secciones que cubren desde los tokens base hasta cada componente.
+
+**Tokens de diseño (`:root`):**
+```css
+/* Escala tipográfica (7 niveles) */
+--text-xs: 11px  --text-sm: 12px  --text-base: 13px  --text-md: 14px
+--text-lg: 16px  --text-xl: 18px  --text-2xl: 24px
+
+/* Escala de espaciado (8 niveles) */
+--space-1: 4px  --space-2: 8px  …  --space-8: 32px
+
+/* 4 niveles de elevación */
+--shadow-xs  --shadow-sm  --shadow  --shadow-md  --shadow-lg  --shadow-card
+
+/* Acento principal */
+--accent: #4f46e5  (índigo)
+```
+
+**Decisiones de diseño:**
+- **Sidebar claro**: fondo blanco con borde derecho `1px solid var(--gray-200)`. Sin gradientes oscuros — facilita la lectura de íconos y etiquetas en cualquier brillo de pantalla.
+- **Login limpio**: fondo `var(--gray-100)`, tarjeta blanca con `box-shadow`. Se elimina el fondo navy con gradientes radiales de versiones anteriores.
+- **Auto-fit grids**: `repeat(auto-fit, minmax(220px, 1fr))` en KPI grids — no hay lógica JS para contar columnas; el CSS adapta el layout en cualquier ancho.
+- **Responsive en 3 breakpoints**: ≥900px sidebar completo, 900px–600px sidebar icon-only (`font-size: 0` oculta texto sin wrapper JS), <600px sidebar off-canvas con overlay.
+
+**Visualizaciones Chart.js:**
+
+| Gráfico | Tipo | Decisión de diseño |
+|---|---|---|
+| Ventas por Sucursal | Barras **horizontales** (`indexAxis: 'y'`) | 10 sucursales con nombres largos — etiquetas legibles sin rotación |
+| Ventas Presencial vs Online | Doughnut | `cutout: 72%` — anillo delgado; `borderWidth: 0` — sin separación artificial entre segmentos |
+
+Colores de gráficos alineados al token `--accent: #4f46e5`. Tooltips con fondo `#1f2937` (neutral oscuro, no navy).
+
 ### 6.3 Módulo Indicadores (`indicadores.js`)
 
 Es el módulo más complejo. Sus características:
@@ -601,9 +636,9 @@ test('fetchVentas retorna datos', async () => {
 
 | Archivo test | Tests | Qué cubre |
 |---|---|---|
-| `ApiServiceFactory.test.js` | 27 | `create()` para cada tipo, entornos, overrides, `register()`, errores |
-| `DataService.test.js` | 22 | `DataFacade` con mockFetch — todos los dominios, errores de red, 401 |
-| `DataDisplay.test.js` | 19 | `render()` en estados loading/error/data/empty, XSS sanitization |
+| `ApiServiceFactory.test.js` | 29 | `create()` para 10 tipos vía `test.each`, entornos, overrides, `register()`, errores, métodos HTTP base |
+| `DataService.test.js` | 19 | `DataFacade` con mockFetch — todos los dominios, errores de red, 401 |
+| `DataDisplay.test.js` | 20 | `render()` en estados loading/error/data/empty, XSS sanitization |
 
 **Dato importante:** `_renderList()` muestra el dominio en **MAYÚSCULAS** (`VENTAS` no `ventas`) → el test usa `toContain('VENTAS')`.
 

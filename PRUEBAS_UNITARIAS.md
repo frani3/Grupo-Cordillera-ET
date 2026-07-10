@@ -18,9 +18,9 @@ Cobertura mínima requerida: 60% ✅ — Cobertura alcanzada: 86.71%
 ### Estructura de archivos
 ```
 frontend-app/src/test/
-  ApiServiceFactory.test.js  → 25 tests — Patrón Factory Method
-  DataService.test.js        → 18 tests — Patrón Facade
-  DataDisplay.test.js        → 25 tests — Consumidor del Facade
+  ApiServiceFactory.test.js  → 29 tests — Patrón Factory Method
+  DataService.test.js        → 19 tests — Patrón Facade
+  DataDisplay.test.js        → 20 tests — Consumidor del Facade
 ```
 
 ### Métricas de cobertura por archivo

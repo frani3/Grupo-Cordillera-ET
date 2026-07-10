@@ -1736,7 +1736,54 @@ tbody tr:hover td { background: var(--accent-light); }
   justify-content: flex-start;
   border-radius: var(--radius-sm);
 }
-.rfp-section .ui-cal { position: static; box-shadow: none; border: 1.5px solid var(--gray-200); margin-top: 10px; animation: none; }
+.rfp-section .ui-cal {
+  position: static;
+  box-shadow: none;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
+  animation: none;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.rfp-section .ui-cal-header { margin-bottom: 8px; }
+.rfp-section .ui-cal-month  { font-size: var(--text-sm); }
+.rfp-section .ui-cal-nav    { width: 24px; height: 24px; }
+.rfp-section .ui-cal-days-header {
+  border-bottom: 1px solid var(--gray-200);
+  margin-bottom: 0;
+}
+.rfp-section .ui-cal-day-name {
+  font-size: 9px;
+  padding: 4px 0;
+}
+.rfp-section .ui-cal-days {
+  gap: 0;
+  border-left: 1px solid var(--gray-200);
+}
+.rfp-section .ui-cal-day {
+  padding: 6px 2px;
+  font-size: var(--text-xs);
+  border-right:  1px solid var(--gray-200);
+  border-bottom: 1px solid var(--gray-200);
+  border-radius: 0;
+}
+.rfp-section .ui-cal-day:hover:not(.empty) {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.rfp-section .ui-cal-day.from,
+.rfp-section .ui-cal-day.to {
+  background: var(--accent);
+  color: var(--white);
+  border-radius: 0;
+}
+.rfp-section .ui-cal-day.in-range {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 0;
+}
+.rfp-section .ui-cal-footer { margin-top: 8px; padding-top: 8px; }
 
 /* ── Report Summary Card ─────────────────────────────────────────────────── */
 .report-summary-card {
