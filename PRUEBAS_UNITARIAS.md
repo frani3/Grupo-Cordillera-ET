@@ -1,4 +1,4 @@
-# Informe de Pruebas Unitarias — Grupo Cordillera EP3
+# Informe de Pruebas Unitarias — Grupo Cordillera ET
 # DSY1106 Desarrollo Fullstack III
 
 ## Resumen ejecutivo

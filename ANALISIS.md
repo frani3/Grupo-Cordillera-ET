@@ -1,5 +1,5 @@
 # Análisis Técnico — Justificación de Patrones de Diseño
-## Proyecto Evaluación 3 — Arquitectura de Software
+## Proyecto Evaluación Transversal — Arquitectura de Software
 
 ---
 
@@ -82,7 +82,7 @@ ApiServiceFactory.create(tipo, entorno)
        └── 'auth'       + cualquiera    → new AuthService(...)  ← extensible sin modificar create()
 ```
 
-**REGISTRY en EP3 (10 tipos registrados):**
+**REGISTRY en ET (10 tipos registrados):**
 ```javascript
 static REGISTRY = {
   data:        DataService,
@@ -292,9 +292,9 @@ OrqDatosController (Contexto)
           └── CacheStrategy  (@Component("cache"))  → calcula máximo y mínimo de montos
 ```
 
-### Implementación GoF completa en EP3
+### Implementación GoF completa en ET
 
-La implementación EP3 usa 5 clases separadas con inyección automática de Spring:
+La implementación ET usa 5 clases separadas con inyección automática de Spring:
 
 **Interfaz `ProcessingStrategy`:**
 ```java
@@ -475,7 +475,7 @@ Spring Boot gestiona beans como Singleton por defecto mediante `@Scope("singleto
 ## 5. Persistencia — JPA + H2 en MS3, MS4 y MS5
 
 ### Categoría GoF
-No es un patrón GoF de comportamiento, sino una decisión de arquitectura de persistencia. Se documenta aquí por su importancia técnica en EP3.
+No es un patrón GoF de comportamiento, sino una decisión de arquitectura de persistencia. Se documenta aquí por su importancia técnica en ET.
 
 ### La Solución con JPA Repository
 

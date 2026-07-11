@@ -1,6 +1,6 @@
 # DEFENSA ORAL — Grupo Cordillera ET
 
-**DSY1106 · Desarrollo Fullstack III — Evaluación 3**  
+**DSY1106 · Desarrollo Fullstack III — Evaluación Transversal**  
 Francisca Barrera · Ignacio Sorko · Patricio Zapata
 
 ---

@@ -1,4 +1,4 @@
-# Persistencia de Datos — Grupo Cordillera EP3
+# Persistencia de Datos — Grupo Cordillera ET
 # DSY1106 Desarrollo Fullstack III
 
 ## Estrategia de persistencia
