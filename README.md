@@ -90,3 +90,4 @@ Interfaz web construida en **vanilla JS** (sin framework), servida por Express c
 | `DEFENSA.md` | Guía de defensa oral: flujo completo, preguntas difíciles con respuesta |
 | `PERSISTENCIA.md` | Estrategia de persistencia: JPA+H2 vs Singleton en memoria |
 | `PRUEBAS_UNITARIAS.md` | Informe de tests: 68 casos JS (Jest) + 23 casos Java (JUnit 5 + Mockito) |
+| `INFORME_RETROSPECTIVO.md` | Informe retrospectivo grupal (pauta EFT126): arquitectura, decisiones técnicas, patrones, versionado, integración y pruebas |
