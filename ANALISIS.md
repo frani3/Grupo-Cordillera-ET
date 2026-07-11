@@ -640,7 +640,7 @@ Todos los microservicios Spring Boot del proyecto heredan de `spring-boot-starte
 
 #### MS1-pos — Spring Boot 3.3.0 / Java 21
 
-**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-amqp (RabbitMQ), mysql-connector-j, spring-cloud-starter-circuitbreaker-resilience4j, lombok
+**Dependencias clave:** spring-boot-starter-web, spring-boot-starter-validation, lombok
 
 **Comando para generar un proyecto equivalente:**
 ```bash

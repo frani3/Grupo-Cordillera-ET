@@ -32,7 +32,7 @@ frontend-app/src/test/
 | DataDisplay.js       | 89.09%    | 65.62%   | 92.85%    | 88.37% | 20, 68-72, 81       |
 | **Total global**     |**86.71%** |**69.86%**|**81.96%** |**88.99%**|                  |
 
-### ApiServiceFactory.test.js — 25 tests
+### ApiServiceFactory.test.js — 29 tests
 
 Verifica el patrón **Factory Method**:
 
@@ -65,7 +65,7 @@ Grupos de tests:
 - Métodos HTTP `get()` y `post()` con mock
 - Endpoints correctos por servicio
 
-### DataService.test.js — 18 tests
+### DataService.test.js — 19 tests
 
 Verifica el patrón **Facade**:
 
@@ -96,7 +96,7 @@ Grupos de tests:
 - Errores HTTP 401, 500, 502
 - Errores de red (ECONNREFUSED)
 
-### DataDisplay.test.js — 25 tests
+### DataDisplay.test.js — 20 tests
 
 Verifica el consumidor del Facade:
 

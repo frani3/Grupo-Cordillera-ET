@@ -1,5 +1,10 @@
 # DEFENSA ORAL — Grupo Cordillera ET
 
+**DSY1106 · Desarrollo Fullstack III — Evaluación 3**  
+Francisca Barrera · Ignacio Sorko · Patricio Zapata
+
+---
+
 ## Índice
 1. [Visión general del sistema](#1-visión-general)
 2. [Capa por capa: qué hace cada componente](#2-capas-del-sistema)
