@@ -25,6 +25,8 @@ SCRIPTS/SIMULADORES               MICROSERVICIOS DE NEGOCIO
                   │
              Web-Container :3000  (Node.js + Express + SPA)
 ```
+![Arquitectura](/Grupo-Cordillera-ET/Arquitectura.jpeg)
+
 
 ---
 
