@@ -104,8 +104,6 @@ App.Reportes = (() => {
       `Ventas Online,$${Math.round(kpis.ventasOnline).toLocaleString('es-CL')}`,
       `Total Transacciones,${kpis.totalTransacciones}`,
       `Ticket Promedio,$${Math.round(kpis.ticketPromedio).toLocaleString('es-CL')}`,
-      `Productos en Stock,${kpis.itemsInventario}`,
-      `Stock Crítico,${kpis.stockCritico}`,
       `Horas Prom. por Empleado,${kpis.promedioHoras.toFixed(1)} hrs`,
       `Ajustes Financieros,$${Math.round(kpis.montoEventos).toLocaleString('es-CL')}`,
       `Total Eventos Financieros,${kpis.totalEventos}`,
@@ -240,15 +238,6 @@ App.Reportes = (() => {
               <span class="report-kpi-value">${fmt(kpis.ventasOnline)}</span>
               <span class="report-kpi-sub">${kpis.transaccionesOnline} online</span>
             </div>` : ''}
-            <div class="report-kpi">
-              <span class="report-kpi-label">Productos en Stock</span>
-              <span class="report-kpi-value">${kpis.itemsInventario}</span>
-              <span class="report-kpi-sub ${kpis.stockCritico > 0 ? 'text-red' : 'text-green'}">
-                ${kpis.stockCritico > 0
-                  ? `${kpis.stockCritico} críticos`
-                  : 'Sin stock crítico'}
-              </span>
-            </div>
             <div class="report-kpi">
               <span class="report-kpi-label">Ajustes Financieros</span>
               <span class="report-kpi-value">${fmt(kpis.montoEventos)}</span>
