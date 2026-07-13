@@ -53,10 +53,10 @@ Response 200:
 | usuario  | user123     | USER  |
 
 ## Base de datos H2
-- Archivo: `/data/bd-usuarios`
-- Volumen Docker: `auth-data`
+- Archivo: `/data/bd-usuario`
+- Volumen Docker: `bd-usuario`
 - Consola H2: http://localhost:8090/h2-console
-- JDBC URL: `jdbc:h2:file:/data/bd-usuarios`
+- JDBC URL: `jdbc:h2:file:/data/bd-usuario`
 - Usuario: `sa` / Contraseña: *(vacío)*
 
 ## Ejecutar

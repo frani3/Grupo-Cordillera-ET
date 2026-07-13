@@ -1,5 +1,9 @@
 # ORQ-DATOS — Orquestador de Datos de Venta
-Puerto: **8082** | Tecnología: Spring Boot | Persistencia: JPA + H2
+Puerto: **8082** (host) → **8080** (interno del contenedor, `server.port`) | Tecnología: Spring Boot | Persistencia: JPA + H2
+
+> A diferencia de los demás servicios (donde el puerto de host coincide con el interno),
+> ORQ-DATOS mapea `8082:8080` en `docker-compose.yml`. El tráfico entre servicios
+> (ej. `bff-service` → `ORQ_SERVICE_URL=http://orq-datos:8080`) usa el puerto interno 8080.
 
 ## Propósito
 Agrega ventas POS (MS1) y Online (MS2) en paralelo, aplica el patrón
@@ -13,6 +17,16 @@ parámetro `?strategy=`, y persiste snapshots de cada consolidación en BD.
 | GET    | /api/datos/ventas                             | Lista cruda de todas las ventas        |
 | GET    | /api/datos/historico                          | Últimos 10 snapshots guardados         |
 | GET    | /api/datos/health                             | Estado del servicio                    |
+
+### Endpoints legacy (retrocompatibilidad con el `orq-service` original)
+Alias sin el prefijo `/datos`, mantenidos para no romper integraciones antiguas.
+Delegan internamente en los endpoints de arriba:
+
+| Método | Ruta                                    | Equivale a              |
+|--------|-------------------------------------------|--------------------------|
+| GET    | /api/data?id={id}&strategy={strategy}   | /api/datos/consolidado   |
+| GET    | /api/ventas                             | /api/datos/ventas        |
+| GET    | /api/health                             | /api/datos/health        |
 
 ## Estrategias disponibles
 

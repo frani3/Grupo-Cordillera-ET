@@ -96,13 +96,13 @@ JpaRepository provee sin código adicional:
 
 | Servicio       | Base de datos H2       | Volumen Docker     | Consola H2                           |
 |----------------|------------------------|--------------------|--------------------------------------|
-| MS-Auth        | /data/bd-usuarios      | auth-data          | http://localhost:8090/h2-console     |
+| MS-Auth        | /data/bd-usuario       | bd-usuario         | http://localhost:8090/h2-console     |
 | MS3 Inventario | /data/bd-inventario    | inventario-data    | http://localhost:8084/h2-console     |
 | MS4 Empleados  | /data/bd-empleados     | empleados-data     | http://localhost:8085/h2-console     |
 | MS5 Reportes   | /data/bd-reportes      | reportes-data      | http://localhost:8086/h2-console     |
-| ORQ Datos      | /data/bd-datos         | datos-db-data      | http://localhost:8082/h2-console     |
-| ORQ Ind        | /data/bd-ind           | ind-db-data        | http://localhost:8092/h2-console     |
-| ORQ Rep        | /data/bd-rep           | rep-db-data        | http://localhost:8093/h2-console     |
+| ORQ Datos      | /data/bd-datos         | bd-datos           | http://localhost:8082/h2-console     |
+| ORQ Ind        | /data/bd-ind           | bd-ind             | http://localhost:8092/h2-console     |
+| ORQ Rep        | /data/bd-rep           | bd-rep             | http://localhost:8093/h2-console     |
 
 ### Persistencia entre reinicios Docker
 

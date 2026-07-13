@@ -18,9 +18,17 @@ campo `sucursal`.
 Request:
 ```json
 {
-  "transactionId": "ONL-001",
+  "trx_id": "ONL-001",
+  "fecha_hora": "2026-06-28T12:00:00",
   "monto_total": 89990,
-  "fecha_hora": "2026-06-28T12:00:00"
+  "metodo_pago": "WEBPAY",
+  "productos": [
+    { "sku": "SKU-456", "cantidad": 1, "precio_unitario": 89990.0 }
+  ],
+  "canal": "online",
+  "plataforma": "web",
+  "email_cliente": "cliente@correo.cl",
+  "direccion_envio": "Av. Siempre Viva 742, Santiago"
 }
 ```
 Response 200:

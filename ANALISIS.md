@@ -147,6 +147,8 @@ La capa browser implementa un sistema de diseño propio mediante **CSS Custom Pr
 
 Abstract Factory crea **familias** de objetos relacionados (ej: tema claro/oscuro). Para este sistema donde solo necesitamos variar configuración HTTP entre entornos, Abstract Factory añade clases innecesarias (viola el principio YAGNI). Factory Method es el mínimo que resuelve el problema de forma elegante.
 
+**Nota de precisión terminológica:** `ApiServiceFactory.create()` es un único método estático que resuelve la clase a instanciar por lookup en `REGISTRY`, sin una jerarquía de "Creator" con subclases que sobrescriban el método de creación (la variante que el catálogo GoF exige para el Factory Method estricto). Es, con más precisión, una **Simple Factory / Static Factory**. Se documenta como "Factory Method" por ser el nombre más reconocible del patrón Creacional que resuelve este problema, pero vale aclarar la distinción para quien la evalúe con rigor GoF.
+
 ---
 
 ## 2. BFF Service — Patrón Proxy
@@ -461,9 +463,9 @@ MS2 implementa el mismo patrón en `OnlineVentaRepository` con `CopyOnWriteArray
 
 Ambos enfoques coexisten en el mismo sistema para demostrar que la persistencia puede resolverse con distintas estrategias según los requisitos del dominio.
 
-### Alternativa Descartada: Spring IoC Bean Singleton
+### Relación con el Singleton de Spring IoC
 
-Spring Boot gestiona beans como Singleton por defecto mediante `@Scope("singleton")`. Esta sería la solución más idiomática en un proyecto Spring completo. Sin embargo, para **demostrar explícitamente el patrón de diseño GoF** en la evaluación, se implementa el patrón clásico en la capa de acceso a datos, desacoplando esta garantía del framework y haciendo el código portable a cualquier contexto Java.
+Spring Boot ya gestiona `PosTransactionRepository`/`OnlineVentaRepository` como beans Singleton por defecto mediante `@Scope("singleton")` — eso no se descarta ni se reemplaza. Lo que añade el Holder Pattern es una garantía **adicional e independiente del framework**: la lista compartida (`DatabaseHolder.INSTANCE`) sigue siendo única incluso si alguna vez se instanciara la clase repositorio más de una vez fuera del contenedor de Spring (por ejemplo, en un test que haga `new PosTransactionRepository()`). El constructor es `protected` — no `private` — por lo que no bloquea la instanciación externa como exige el Singleton GoF clásico; la unicidad real recae sobre el campo estático, no sobre la clase. Se incluye igual como ejercicio del patrón de diseño Creacional para la evaluación, dejando explícito que en este proyecto ambos mecanismos (bean Spring + Holder estático) coexisten.
 
 ### Principios SOLID Aplicados
 

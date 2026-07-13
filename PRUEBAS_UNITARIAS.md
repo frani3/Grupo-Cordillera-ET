@@ -6,10 +6,12 @@
 | Capa     | Framework          | Archivos | Tests | Cobertura Stmts | Cobertura Branch |
 |----------|--------------------|----------|-------|-----------------|------------------|
 | Frontend | Jest 29 (JS)       | 3        | 68    | 86.71%          | 69.86%           |
-| Backend  | JUnit 5 + Mockito  | 4        | 23    | Unitario        | Unitario         |
-| **Total**|                    | **7**    | **91**|                 |                  |
+| Backend  | JUnit 5 + Mockito  | 5        | 29    | Unitario        | Unitario         |
+| **Total**|                    | **8**    | **97**|                 |                  |
 
-Cobertura mínima requerida: 60% ✅ — Cobertura alcanzada: 86.71%
+Cobertura mínima requerida (`coverageThreshold.global` en `package.json`): **70%** en statements/functions/lines/branches.
+Cobertura alcanzada: Statements 86.71% ✅ · Functions 81.96% ✅ · Lines 88.99% ✅ · **Branches 69.86% ❌ (bajo el umbral de 70%)**.
+El gate de cobertura de `npm test` / `docker build --target test` está fallando actualmente por branches; hay que sumar casos de prueba para las ramas no cubiertas en `ApiServiceFactory.js`, `DataService.js` y `DataDisplay.js` (ver tabla de líneas no cubiertas más abajo) antes de dar por cerrado este gate.
 
 ---
 
@@ -148,16 +150,19 @@ Time:        1.095 s
 ### Estructura de archivos
 ```
 ms-auth/src/test/java/com/evaluacion/msauth/
-  AuthControllerTest.java           → 5 tests
+  AuthControllerTest.java           → 7 tests
+
+ms1-pos/src/test/java/com/servicio1/demo/
+  DemoApplicationTests.java         → 1 test (contextLoads, sin aserciones de negocio)
 
 ms3-inventario/src/test/java/com/evaluacion/ms3/
-  InventarioControllerTest.java     → 6 tests
+  InventarioControllerTest.java     → 7 tests
 
 ms4-empleados/src/test/java/com/evaluacion/ms4/
-  EmpleadoControllerTest.java       → 6 tests
+  EmpleadoControllerTest.java       → 7 tests
 
 ms5-reportes/src/test/java/com/evaluacion/ms5/
-  ReporteControllerTest.java        → 6 tests
+  ReporteControllerTest.java        → 7 tests
 ```
 
 ### Patrón de test usado: @Mock + @InjectMocks
@@ -191,48 +196,61 @@ class InventarioControllerTest {
 }
 ```
 
-### AuthControllerTest.java — 5 tests
+### AuthControllerTest.java — 7 tests
 
-| Test                                   | Verifica                           | HTTP esperado |
-|----------------------------------------|------------------------------------|---------------|
-| login_credencialesValidas_retornaToken | Login correcto devuelve token UUID | 200 OK        |
-| login_credencialesInvalidas_retorna401 | Login incorrecto rechazado         | 401           |
-| validate_tokenValido_retornaOk         | Token activo es aceptado           | 200 OK        |
-| validate_tokenInvalido_retorna401      | Token inválido es rechazado        | 401           |
-| health_retornaOk                       | Endpoint de salud responde         | 200 OK        |
+| Test                                   | Verifica                             | HTTP esperado |
+|----------------------------------------|---------------------------------------|---------------|
+| login_credencialesValidas_retornaToken | Login correcto devuelve token UUID   | 200 OK        |
+| login_credencialesInvalidas_retorna401 | Login incorrecto rechazado           | 401           |
+| validate_tokenValido_retornaOk         | Token activo es aceptado             | 200 OK        |
+| validate_tokenInvalido_retorna401      | Token inválido es rechazado          | 401           |
+| validate_tokenEnBody_retornaOk         | Token enviado en el body es aceptado | 200 OK        |
+| validate_sinToken_retorna400           | Falta de token es rechazada          | 400           |
+| health_retornaUp                       | Endpoint de salud responde           | 200 OK        |
 
-### InventarioControllerTest.java — 6 tests
+### InventarioControllerTest.java — 7 tests
 
-| Test                               | Verifica                        | HTTP esperado |
-|------------------------------------|---------------------------------|---------------|
-| getItems_retornaListaCompleta       | GET devuelve todos los ítems    | Lista         |
-| getItems_listaVacia                | GET con BD vacía retorna []     | Lista vacía   |
-| recibirItem_payloadValido          | POST válido guarda el ítem      | 200 OK        |
-| recibirItem_sinItemId_retorna400    | POST sin item_id rechazado      | 400           |
-| recibirItem_sinNombre_retorna400    | POST sin nombre rechazado       | 400           |
-| health_retornaOk                   | Endpoint de salud responde      | 200 OK        |
+| Test                                     | Verifica                        | HTTP esperado |
+|-------------------------------------------|----------------------------------|---------------|
+| listarItems_retornaListaCompleta           | GET devuelve todos los ítems    | Lista         |
+| listarItems_listaVacia_retornaListaVacia   | GET con BD vacía retorna []     | Lista vacía   |
+| recibirItem_payload_valido_guardaItem      | POST válido guarda el ítem      | 200 OK        |
+| recibirItem_sinItemId_retorna400           | POST sin item_id rechazado      | 400           |
+| recibirItem_sinNombre_retorna400           | POST sin nombre rechazado       | 400           |
+| recibirItem_sinSucursal_retorna400         | POST sin sucursal rechazado     | 400           |
+| health_retornaUp                           | Endpoint de salud responde      | 200 OK        |
 
-### EmpleadoControllerTest.java — 6 tests
+### EmpleadoControllerTest.java — 7 tests
 
-| Test                                  | Verifica                             | HTTP esperado |
-|---------------------------------------|--------------------------------------|---------------|
-| getRegistros_retornaListaCompleta      | GET devuelve todos los registros     | Lista         |
-| getRegistros_listaVacia               | GET vacío retorna []                 | Lista vacía   |
-| recibirRegistro_payloadValido         | POST válido guarda el registro       | 200 OK        |
-| recibirRegistro_sinEmpleadoId         | POST sin empleado_id rechazado       | 400           |
-| recibirRegistro_horasInvalidas        | POST con horas > 24 rechazado        | 400           |
-| health_retornaOk                      | Endpoint de salud responde           | 200 OK        |
+| Test                                          | Verifica                             | HTTP esperado |
+|------------------------------------------------|---------------------------------------|---------------|
+| listarRegistros_retornaListaCompleta            | GET devuelve todos los registros     | Lista         |
+| listarRegistros_listaVacia_retornaListaVacia    | GET vacío retorna []                 | Lista vacía   |
+| recibirRegistro_payloadValido_guardaRegistro    | POST válido guarda el registro       | 200 OK        |
+| recibirRegistro_sinEmpleadoId_retorna400        | POST sin empleado_id rechazado       | 400           |
+| recibirRegistro_sinTurno_retorna400             | POST sin turno rechazado             | 400           |
+| recibirRegistro_horasInvalidas_retorna400       | POST con horas > 24 rechazado        | 400           |
+| health_retornaUp                                | Endpoint de salud responde           | 200 OK        |
 
-### ReporteControllerTest.java — 6 tests
+### ReporteControllerTest.java — 7 tests
 
-| Test                               | Verifica                         | HTTP esperado |
-|------------------------------------|----------------------------------|---------------|
-| getEventos_retornaListaCompleta     | GET devuelve todos los eventos   | Lista         |
-| getEventos_listaVacia              | GET vacío retorna []             | Lista vacía   |
-| recibirEvento_payloadValido        | POST válido guarda el evento     | 200 OK        |
-| recibirEvento_sinReporteId         | POST sin reporte_id rechazado    | 400           |
-| recibirEvento_montoNegativo        | POST con monto < 0 rechazado     | 400           |
-| health_retornaOk                   | Endpoint de salud responde       | 200 OK        |
+| Test                                       | Verifica                         | HTTP esperado |
+|-----------------------------------------------|-----------------------------------|---------------|
+| listarEventos_retornaListaCompleta             | GET devuelve todos los eventos   | Lista         |
+| listarEventos_listaVacia_retornaListaVacia     | GET vacío retorna []             | Lista vacía   |
+| recibirEvento_payloadValido_guardaEvento       | POST válido guarda el evento     | 200 OK        |
+| recibirEvento_sinReporteId_retorna400          | POST sin reporte_id rechazado    | 400           |
+| recibirEvento_sinTipo_retorna400               | POST sin tipo rechazado          | 400           |
+| recibirEvento_montoNegativo_retorna400         | POST con monto < 0 rechazado     | 400           |
+| health_retornaUp                               | Endpoint de salud responde       | 200 OK        |
+
+### DemoApplicationTests.java (ms1-pos) — 1 test
+
+| Test         | Verifica                                       | HTTP esperado |
+|--------------|--------------------------------------------------|---------------|
+| contextLoads | El contexto de Spring Boot arranca sin errores  | N/A           |
+
+Test de arranque generado por defecto por Spring Initializr, sin aserciones de lógica de negocio (a diferencia de los otros 4 archivos, que sí prueban el controller con `@Mock`/`@InjectMocks`).
 
 ---
 

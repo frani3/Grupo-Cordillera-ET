@@ -33,4 +33,4 @@ documentación completa y pruebas unitarias.
 - PERSISTENCIA.md      → Implementación de persistencia JPA + H2
 - PRUEBAS_UNITARIAS.md → Informe de cobertura y métricas de testing
 - postman_collection.json → Colección completa de endpoints REST
-- frontend-app/coverage-report/ → Reporte HTML de cobertura Jest
+- frontend-app/coverage/ → Reporte HTML de cobertura Jest (generado por `npx jest --coverage`, directorio por defecto — no está versionado en el repo)

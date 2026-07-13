@@ -19,6 +19,9 @@ Web (3000) → API Gateway nginx (80) → BFF (8080)
   → ORQ-IND   (8092) → MS3-INVENTARIO (8084) + MS4-EMPLEADOS (8085)
   → ORQ-REP   (8093) → MS5-REPORTES (8086)
   → MS AUTH   (8090) ← validación de tokens
+
+  BFF (8080) → MS3-INVENTARIO (8084) + MS4-EMPLEADOS (8085) + MS5-REPORTES (8086)
+    (llamada directa para /api/proxy/datos/*, sin pasar por ORQ-IND/ORQ-REP)
 ```
 
 ---

@@ -16,10 +16,16 @@ thread-safe en memoria.
 Request:
 ```json
 {
-  "transactionId": "TRX-POS-0001-1234",
-  "monto_total": 29990,
+  "trx_id": "TRX-POS-0001-1234",
   "sucursal": "Las Condes",
-  "fecha_hora": "2026-06-28T12:00:00"
+  "caja_id": "CAJA-01",
+  "fecha_hora": "2026-06-28T12:00:00",
+  "monto_total": 29990,
+  "metodo_pago": "DEBITO",
+  "vendedor_id": "VEND-07",
+  "productos": [
+    { "sku": "SKU-123", "cantidad": 2, "precio_unitario": 14995.0 }
+  ]
 }
 ```
 Response 200:
